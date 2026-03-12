@@ -12,7 +12,7 @@ type Team struct {
 	bun.BaseModel `bun:"table:teams,alias:t"`
 
 	ID           int64     `bun:"id,pk,autoincrement"`
-	BBRefID      string    `bun:"bbref_id,notnull,unique"`
+	NBAID        string    `bun:"nba_id,notnull,unique"`
 	Name         string    `bun:"name,notnull"`
 	Abbreviation string    `bun:"abbreviation,notnull"`
 	CreatedAt    time.Time `bun:"created_at,notnull,default:current_timestamp"`
@@ -24,7 +24,7 @@ type Player struct {
 	bun.BaseModel `bun:"table:players,alias:p"`
 
 	ID        int64     `bun:"id,pk,autoincrement"`
-	BBRefID   string    `bun:"bbref_id,notnull,unique"`
+	NBAID     string    `bun:"nba_id,notnull,unique"`
 	FirstName string    `bun:"first_name,notnull"`
 	LastName  string    `bun:"last_name,notnull"`
 	Position  string    `bun:"position,notnull"` // PG, SG, SF, PF, C
@@ -41,7 +41,7 @@ type Game struct {
 	bun.BaseModel `bun:"table:games,alias:g"`
 
 	ID         int64     `bun:"id,pk,autoincrement"`
-	BBRefID    string    `bun:"bbref_id,notnull,unique"`
+	NBAID      string    `bun:"nba_id,notnull,unique"`
 	Season     int       `bun:"season,notnull"`
 	GameDate   time.Time `bun:"game_date,notnull"`
 	HomeTeamID int64     `bun:"home_team_id,notnull"`
