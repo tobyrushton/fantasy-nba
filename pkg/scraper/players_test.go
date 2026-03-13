@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/tobyrushton/fantasy-nba/pkg/fakes"
-	"github.com/tobyrushton/fantasy-nba/pkg/models"
 )
 
 func TestScraper_GetPlayers(t *testing.T) {
@@ -24,7 +23,7 @@ func TestScraper_GetPlayers(t *testing.T) {
 		Body:       rc,
 	}, nil)
 
-	teams := []models.Team{
+	teams := []ScrapedTeam{
 		{
 			NBAID:        "1610612743",
 			Name:         "Denver Nuggets",
@@ -50,7 +49,7 @@ func TestScraper_GetPlayers(t *testing.T) {
 }
 
 func TestScraper_getPlayersForTeam(t *testing.T) {
-	team := models.Team{
+	team := ScrapedTeam{
 		NBAID:        "1610612743",
 		Name:         "Denver Nuggets",
 		Abbreviation: "DEN",

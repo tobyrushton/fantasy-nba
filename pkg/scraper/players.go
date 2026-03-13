@@ -6,18 +6,19 @@ import (
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/tobyrushton/fantasy-nba/pkg/models"
 )
 
 type ScrapePlayer struct {
 	FirstName string
 	LastName  string
 	Position  string
+	TeamNBAID string
+	NBAID     string
 }
 
 // GetPlayers retrieves the list of players from the website.
 // Requires a list of teams to scrape.
-func (s *Scraper) GetPlayers(teams []models.Team) ([]ScrapePlayer, error) {
+func (s *Scraper) GetPlayers(teams []ScrapedTeam) ([]ScrapePlayer, error) {
 	wg := sync.WaitGroup{}
 
 	players := make([]ScrapePlayer, 0)
@@ -40,7 +41,7 @@ func (s *Scraper) GetPlayers(teams []models.Team) ([]ScrapePlayer, error) {
 	return players, nil
 }
 
-func (s *Scraper) getPlayersForTeam(team models.Team) ([]ScrapePlayer, error) {
+func (s *Scraper) getPlayersForTeam(team ScrapedTeam) ([]ScrapePlayer, error) {
 	players := make([]ScrapePlayer, 0)
 	res, err := s.getPage(fmt.Sprintf("https://www.nba.com/team/%s/%s", team.NBAID, team.Abbreviation))
 	if err != nil {
@@ -98,11 +99,21 @@ func (s *Scraper) getPlayersForTeam(team models.Team) ([]ScrapePlayer, error) {
 				return
 			}
 
+			playerLink := nameCell.Find("a").AttrOr("href", "")
+			if playerLink == "" {
+				return
+			}
+			// The player link looks like "/player/1629029/jayson-tatum".
+			parts := strings.Split(playerLink, "/")
+			nbaId := parts[2]
+
 			first, last := splitName(fullName)
 			players = append(players, ScrapePlayer{
 				FirstName: first,
 				LastName:  last,
 				Position:  position,
+				TeamNBAID: team.NBAID,
+				NBAID:     nbaId,
 			})
 		})
 	})
