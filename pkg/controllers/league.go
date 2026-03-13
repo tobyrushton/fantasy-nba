@@ -26,6 +26,19 @@ type joinLeagueRequest struct {
 	UserID   int64 `json:"user_id"`
 }
 
+type createRosterRequest struct {
+	LeagueID  int     `json:"league_id"`
+	UserID    int64   `json:"user_id"`
+	PlayerIDs []int64 `json:"player_ids"`
+}
+
+type updateRosterRequest struct {
+	LeagueID      int     `json:"league_id"`
+	UserID        int64   `json:"user_id"`
+	RemovePlayers []int64 `json:"remove_players"`
+	AddPlayers    []int64 `json:"add_players"`
+}
+
 func NewLeagueController(repo models.Repo) *LeagueController {
 	return &LeagueController{repo: repo}
 }
@@ -97,4 +110,70 @@ func (c *LeagueController) JoinLeague(ctx fiber.Ctx) error {
 	}
 
 	return ctx.JSON(fiber.Map{"message": "successfully joined league"})
+}
+
+func (c *LeagueController) CreateRoster(ctx fiber.Ctx) error {
+	var req createRosterRequest
+	if err := ctx.Bind().Body(&req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if len(req.PlayerIDs) != 10 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "roster must contain exactly 10 players"})
+	}
+	contains := make(map[int64]interface{})
+	for _, id := range req.PlayerIDs {
+		if _, exists := contains[id]; exists {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "duplicate player IDs are not allowed"})
+		}
+		contains[id] = struct{}{}
+	}
+
+	// Create the roster
+	if err := c.repo.CreateRoster(ctx.Context(), int64(req.LeagueID), req.UserID, req.PlayerIDs); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create roster"})
+	}
+
+	return ctx.JSON(fiber.Map{"message": "roster created successfully"})
+}
+
+func (c *LeagueController) GetRostersByLeagueID(ctx fiber.Ctx) error {
+	leagueID, err := strconv.Atoi(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid league ID"})
+	}
+
+	rosters, err := c.repo.GetRostersByLeagueID(ctx.Context(), leagueID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get rosters"})
+	}
+
+	groupByUser := make(map[int64][]models.Player)
+	for _, roster := range rosters {
+		groupByUser[roster.UserID] = append(groupByUser[roster.UserID], *roster.Player)
+	}
+
+	return ctx.JSON(groupByUser)
+}
+
+func (c *LeagueController) UpdateRoster(ctx fiber.Ctx) error {
+	var req updateRosterRequest
+	if err := ctx.Bind().Body(&req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if len(req.AddPlayers)+len(req.RemovePlayers) == 0 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "must add or remove at least one player"})
+	}
+
+	if len(req.AddPlayers) != len(req.RemovePlayers) {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "number of players to add must equal number of players to remove"})
+	}
+
+	// Update the roster
+	if err := c.repo.UpdateRoster(ctx.Context(), int64(req.LeagueID), req.UserID, req.RemovePlayers, req.AddPlayers); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update roster"})
+	}
+
+	return ctx.JSON(fiber.Map{"message": "roster updated successfully"})
 }

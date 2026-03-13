@@ -18,6 +18,9 @@ type Repo interface {
 	GetLeagueByID(ctx context.Context, id int) (*League, error)
 	DeleteLeague(ctx context.Context, id int, userID int64) error
 	JoinLeague(ctx context.Context, leagueID int, userID int64) error
+	CreateRoster(ctx context.Context, leagueID, userID int64, playerIDs []int64) error
+	GetRostersByLeagueID(ctx context.Context, leagueID int) ([]*TeamRoster, error)
+	UpdateRoster(ctx context.Context, leagueID, userID int64, removePlayerIDs, addPlayerIDs []int64) error
 }
 
 type PostgresRepo struct {
@@ -120,6 +123,79 @@ func (r *PostgresRepo) JoinLeague(ctx context.Context, leagueID int, userID int6
 
 	_, err = r.db.NewInsert().Model(membership).Exec(ctx)
 	return err
+}
+
+func (r *PostgresRepo) CreateRoster(ctx context.Context, leagueID, userID int64, playerIDs []int64) error {
+	// Check if league exists
+	league, err := r.GetLeagueByID(ctx, int(leagueID))
+	if err != nil {
+		return err
+	}
+	if league == nil {
+		return fmt.Errorf("league with id: %d does not exist", leagueID)
+	}
+
+	roster := make([]*TeamRoster, len(playerIDs))
+	for i, playerID := range playerIDs {
+		roster[i] = &TeamRoster{
+			LeagueID: leagueID,
+			UserID:   userID,
+			PlayerID: playerID,
+		}
+	}
+
+	_, err = r.db.NewInsert().Model(&roster).Exec(ctx)
+	return err
+}
+
+func (r *PostgresRepo) GetRostersByLeagueID(ctx context.Context, leagueID int) ([]*TeamRoster, error) {
+	var rosters []*TeamRoster
+	err := r.db.NewSelect().Model(&rosters).Where("league_id = ?", leagueID).Relation("Player").Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return rosters, nil
+}
+
+func (r *PostgresRepo) UpdateRoster(ctx context.Context, leagueID, userID int64, removePlayerIDs, addPlayerIDs []int64) error {
+	// Check if league exists
+	league, err := r.GetLeagueByID(ctx, int(leagueID))
+	if err != nil {
+		return err
+	}
+	if league == nil {
+		return fmt.Errorf("league with id: %d does not exist", leagueID)
+	}
+
+	// Remove players from roster
+	if len(removePlayerIDs) > 0 {
+		_, err = r.db.NewDelete().Model(&TeamRoster{}).
+			Where("league_id = ? AND user_id = ? AND player_id IN (?)", leagueID, userID, bun.List(removePlayerIDs)).
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Add players to roster
+	if len(addPlayerIDs) > 0 {
+		newRoster := make([]*TeamRoster, len(addPlayerIDs))
+		for i, playerID := range addPlayerIDs {
+			newRoster[i] = &TeamRoster{
+				LeagueID: leagueID,
+				UserID:   userID,
+				PlayerID: playerID,
+			}
+		}
+
+		_, err = r.db.NewInsert().Model(&newRoster).Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 var _ Repo = (*PostgresRepo)(nil)
