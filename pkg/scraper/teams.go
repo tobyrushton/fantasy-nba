@@ -5,11 +5,16 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/tobyrushton/fantasy-nba/pkg/models"
 )
 
+type ScrapedTeam struct {
+	Name         string
+	Abbreviation string
+	NBAID        string
+}
+
 // GetTeams retrieves the list of NBA teams from basketball-reference
-func (s *Scraper) GetTeams() ([]models.Team, error) {
+func (s *Scraper) GetTeams() ([]ScrapedTeam, error) {
 	res, err := s.getPage("https://www.nba.com/teams")
 	if err != nil {
 		return nil, err
@@ -25,7 +30,7 @@ func (s *Scraper) GetTeams() ([]models.Team, error) {
 		return nil, err
 	}
 
-	teams := make([]models.Team, 0)
+	teams := make([]ScrapedTeam, 0)
 
 	doc.Find("a.NavTeamList_ntlTeam__9K_aX").Each(func(i int, s *goquery.Selection) {
 		name, _ := s.Attr("data-text")
@@ -45,7 +50,7 @@ func (s *Scraper) GetTeams() ([]models.Team, error) {
 			}
 		}
 
-		teams = append(teams, models.Team{
+		teams = append(teams, ScrapedTeam{
 			NBAID:        id,
 			Abbreviation: abbr,
 			Name:         name,

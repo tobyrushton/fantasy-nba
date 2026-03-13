@@ -9,12 +9,18 @@ import (
 	"github.com/tobyrushton/fantasy-nba/pkg/models"
 )
 
+type ScrapePlayer struct {
+	FirstName string
+	LastName  string
+	Position  string
+}
+
 // GetPlayers retrieves the list of players from the website.
 // Requires a list of teams to scrape.
-func (s *Scraper) GetPlayers(teams []models.Team) ([]models.Player, error) {
+func (s *Scraper) GetPlayers(teams []models.Team) ([]ScrapePlayer, error) {
 	wg := sync.WaitGroup{}
 
-	players := make([]models.Player, 0)
+	players := make([]ScrapePlayer, 0)
 
 	// scrape each team in parallel to speed up the process
 	for _, team := range teams {
@@ -34,8 +40,8 @@ func (s *Scraper) GetPlayers(teams []models.Team) ([]models.Player, error) {
 	return players, nil
 }
 
-func (s *Scraper) getPlayersForTeam(team models.Team) ([]models.Player, error) {
-	players := make([]models.Player, 0)
+func (s *Scraper) getPlayersForTeam(team models.Team) ([]ScrapePlayer, error) {
+	players := make([]ScrapePlayer, 0)
 	res, err := s.getPage(fmt.Sprintf("https://www.nba.com/team/%s/%s", team.NBAID, team.Abbreviation))
 	if err != nil {
 		return players, err
@@ -93,7 +99,7 @@ func (s *Scraper) getPlayersForTeam(team models.Team) ([]models.Player, error) {
 			}
 
 			first, last := splitName(fullName)
-			players = append(players, models.Player{
+			players = append(players, ScrapePlayer{
 				FirstName: first,
 				LastName:  last,
 				Position:  position,

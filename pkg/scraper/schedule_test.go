@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/tobyrushton/fantasy-nba/pkg/fakes"
-	"github.com/tobyrushton/fantasy-nba/pkg/models"
 )
 
 func TestScraper_scrapeHomeGames(t *testing.T) {
@@ -44,7 +43,7 @@ func TestScraper_GetHomeGames(t *testing.T) {
 		Body:       rc,
 	}, nil)
 
-	teams := []models.Team{
+	teams := []ScrapedTeam{
 		{NBAID: "NUGGETS"},
 		{NBAID: "WARRIORS"},
 	}

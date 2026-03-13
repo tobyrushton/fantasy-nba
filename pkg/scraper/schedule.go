@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/tobyrushton/fantasy-nba/pkg/models"
 )
 
 // ScrapedGame holds the raw scraped data before DB ID resolution.
@@ -22,7 +21,7 @@ type ScrapedGame struct {
 	AwayScore     *int
 }
 
-func (s *Scraper) GetSchedule(teams []models.Team, season int) ([]ScrapedGame, error) {
+func (s *Scraper) GetSchedule(teams []ScrapedTeam, season int) ([]ScrapedGame, error) {
 	games := make([]ScrapedGame, 0)
 	parseErrors := make([]string, 0)
 
@@ -31,7 +30,7 @@ func (s *Scraper) GetSchedule(teams []models.Team, season int) ([]ScrapedGame, e
 	// scrape home schedule for each team in parallel, then combine results.
 	for _, team := range teams {
 		wg.Add(1)
-		go func(team models.Team) {
+		go func(team ScrapedTeam) {
 			defer wg.Done()
 
 			homeGames, err := s.scrapeHomeGames(team.NBAID, season)
