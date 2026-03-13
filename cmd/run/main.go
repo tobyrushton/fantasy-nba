@@ -1,0 +1,54 @@
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/gofiber/fiber/v3"
+	"github.com/tobyrushton/fantasy-nba/pkg/config"
+	"github.com/tobyrushton/fantasy-nba/pkg/controllers"
+	"github.com/tobyrushton/fantasy-nba/pkg/db"
+	"github.com/tobyrushton/fantasy-nba/pkg/db/models"
+)
+
+func main() {
+	cfg := config.MustLoadConfig()
+
+	db, err := db.NewDb(fmt.Sprintf("postgres://admin:%s@localhost:5432/postgres?sslmode=disable", cfg.DB_PASSWORD))
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+
+	repo := models.NewPostgresRepo(db)
+
+	app := fiber.New()
+
+	// Set up routes
+
+	// Auth routes
+	ac := controllers.NewAuthController(repo, cfg.JWT_SECRET)
+	auth := app.Group("/auth")
+	auth.Post("/register", ac.Register)
+	auth.Post("/login", ac.Login)
+
+	// Player routes
+	pc := controllers.NewPlayersController(repo)
+	players := app.Group("/players")
+	players.Get("/", pc.GetPlayers)
+	players.Get("/:id", pc.GetPlayer)
+
+	// league routes
+	lc := controllers.NewLeagueController(repo)
+	league := app.Group("/league")
+	league.Use(ac.Middleware)
+	league.Post("/", lc.CreateLeague)
+	league.Get("/", lc.GetLeagues)
+	league.Post("/join", lc.JoinLeague)
+	league.Post("/roster", lc.CreateRoster)
+	league.Put("/roster", lc.UpdateRoster)
+	league.Delete("/", lc.DeleteLeague)
+	league.Get("/:id/rosters", lc.GetRostersByLeagueID)
+	league.Get("/:id", lc.GetLeagueByID)
+
+	log.Fatal(app.Listen(":8080"))
+}
