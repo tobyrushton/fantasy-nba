@@ -93,6 +93,19 @@ type FakeRepo struct {
 		result1 *models.User
 		result2 error
 	}
+	JoinLeagueStub        func(context.Context, int, int64) error
+	joinLeagueMutex       sync.RWMutex
+	joinLeagueArgsForCall []struct {
+		arg1 context.Context
+		arg2 int
+		arg3 int64
+	}
+	joinLeagueReturns struct {
+		result1 error
+	}
+	joinLeagueReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -484,6 +497,69 @@ func (fake *FakeRepo) GetUserByUsernameReturnsOnCall(i int, result1 *models.User
 		result1 *models.User
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeRepo) JoinLeague(arg1 context.Context, arg2 int, arg3 int64) error {
+	fake.joinLeagueMutex.Lock()
+	ret, specificReturn := fake.joinLeagueReturnsOnCall[len(fake.joinLeagueArgsForCall)]
+	fake.joinLeagueArgsForCall = append(fake.joinLeagueArgsForCall, struct {
+		arg1 context.Context
+		arg2 int
+		arg3 int64
+	}{arg1, arg2, arg3})
+	stub := fake.JoinLeagueStub
+	fakeReturns := fake.joinLeagueReturns
+	fake.recordInvocation("JoinLeague", []interface{}{arg1, arg2, arg3})
+	fake.joinLeagueMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeRepo) JoinLeagueCallCount() int {
+	fake.joinLeagueMutex.RLock()
+	defer fake.joinLeagueMutex.RUnlock()
+	return len(fake.joinLeagueArgsForCall)
+}
+
+func (fake *FakeRepo) JoinLeagueCalls(stub func(context.Context, int, int64) error) {
+	fake.joinLeagueMutex.Lock()
+	defer fake.joinLeagueMutex.Unlock()
+	fake.JoinLeagueStub = stub
+}
+
+func (fake *FakeRepo) JoinLeagueArgsForCall(i int) (context.Context, int, int64) {
+	fake.joinLeagueMutex.RLock()
+	defer fake.joinLeagueMutex.RUnlock()
+	argsForCall := fake.joinLeagueArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRepo) JoinLeagueReturns(result1 error) {
+	fake.joinLeagueMutex.Lock()
+	defer fake.joinLeagueMutex.Unlock()
+	fake.JoinLeagueStub = nil
+	fake.joinLeagueReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepo) JoinLeagueReturnsOnCall(i int, result1 error) {
+	fake.joinLeagueMutex.Lock()
+	defer fake.joinLeagueMutex.Unlock()
+	fake.JoinLeagueStub = nil
+	if fake.joinLeagueReturnsOnCall == nil {
+		fake.joinLeagueReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.joinLeagueReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeRepo) Invocations() map[string][][]interface{} {

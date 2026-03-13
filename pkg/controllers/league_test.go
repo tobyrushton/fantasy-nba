@@ -203,10 +203,55 @@ func (s *LeagueControllerSuite) TestDeleteLeagueReturnsSuccessMessage() {
 	s.NoError(res.Body.Close())
 }
 
+func (s *LeagueControllerSuite) TestJoinLeagueReturns400WhenBodyIsInvalid() {
+	repo := &fakes.FakeRepo{}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/leagues/join", "{bad-json")
+
+	s.Equal(fiber.StatusBadRequest, res.StatusCode)
+	s.Equal(0, repo.JoinLeagueCallCount())
+	s.Equal(map[string]string{"error": "invalid request body"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestJoinLeagueReturns500WhenRepoFails() {
+	repo := &fakes.FakeRepo{}
+	repo.JoinLeagueReturns(errors.New("db down"))
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/leagues/join", `{"league_id":7,"user_id":42}`)
+
+	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.JoinLeagueCallCount())
+
+	_, gotLeagueID, gotUserID := repo.JoinLeagueArgsForCall(0)
+	s.Equal(7, gotLeagueID)
+	s.Equal(int64(42), gotUserID)
+	s.Equal(map[string]string{"error": "failed to join league"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestJoinLeagueReturnsSuccessMessage() {
+	repo := &fakes.FakeRepo{}
+	repo.JoinLeagueReturns(nil)
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/leagues/join", `{"league_id":7,"user_id":42}`)
+
+	s.Equal(fiber.StatusOK, res.StatusCode)
+	s.Equal(1, repo.JoinLeagueCallCount())
+
+	_, gotLeagueID, gotUserID := repo.JoinLeagueArgsForCall(0)
+	s.Equal(7, gotLeagueID)
+	s.Equal(int64(42), gotUserID)
+
+	var resp map[string]string
+	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
+	s.Equal("successfully joined league", resp["message"])
+	s.NoError(res.Body.Close())
+}
+
 func (s *LeagueControllerSuite) newApp(repo *fakes.FakeRepo) *fiber.App {
 	controller := NewLeagueController(repo)
 	app := fiber.New()
 	app.Post("/leagues", controller.CreateLeague)
+	app.Post("/leagues/join", controller.JoinLeague)
 	app.Get("/leagues", controller.GetLeagues)
 	app.Get("/leagues/:id", controller.GetLeagueByID)
 	app.Delete("/leagues", controller.DeleteLeague)

@@ -21,6 +21,11 @@ type deleteLeagueRequest struct {
 	UserID int64 `json:"user_id"`
 }
 
+type joinLeagueRequest struct {
+	LeagueID int   `json:"league_id"`
+	UserID   int64 `json:"user_id"`
+}
+
 func NewLeagueController(repo models.Repo) *LeagueController {
 	return &LeagueController{repo: repo}
 }
@@ -78,4 +83,18 @@ func (c *LeagueController) DeleteLeague(ctx fiber.Ctx) error {
 	}
 
 	return ctx.JSON(fiber.Map{"message": "league deleted successfully"})
+}
+
+func (c *LeagueController) JoinLeague(ctx fiber.Ctx) error {
+	var req joinLeagueRequest
+	if err := ctx.Bind().Body(&req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	// Join the league
+	if err := c.repo.JoinLeague(ctx.Context(), req.LeagueID, req.UserID); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to join league"})
+	}
+
+	return ctx.JSON(fiber.Map{"message": "successfully joined league"})
 }
