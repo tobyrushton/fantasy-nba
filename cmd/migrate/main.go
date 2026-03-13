@@ -52,5 +52,13 @@ func main() {
 		log.Fatalf("failed to create player_game_stats table: %v", err)
 	}
 
+	_, err = db.NewCreateTable().
+		Model((*models.User)(nil)).
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		log.Fatalf("failed to create users table: %v", err)
+	}
+
 	log.Println("Database migration completed successfully.")
 }
