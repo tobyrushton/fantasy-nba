@@ -1,0 +1,556 @@
+basePath: /
+definitions:
+  controllers.authRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  controllers.authTokenResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  controllers.createLeagueRequest:
+    properties:
+      name:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  controllers.createRosterRequest:
+    properties:
+      league_id:
+        type: integer
+      player_ids:
+        items:
+          type: integer
+        type: array
+      user_id:
+        type: integer
+    type: object
+  controllers.deleteLeagueRequest:
+    properties:
+      id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  controllers.joinLeagueRequest:
+    properties:
+      league_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  controllers.leagueResponse:
+    properties:
+      creator_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  controllers.playerGameStatsResponse:
+    properties:
+      assists:
+        type: integer
+      blocks:
+        type: integer
+      made_free_throws:
+        type: integer
+      made_three_pointers:
+        type: integer
+      player_id:
+        type: integer
+      points:
+        type: integer
+      rebounds:
+        type: integer
+      steals:
+        type: integer
+      turnovers:
+        type: integer
+    type: object
+  controllers.playerResponse:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      nba_id:
+        type: string
+      position:
+        type: string
+      team_id:
+        type: integer
+    type: object
+  controllers.playerStatsResponse:
+    properties:
+      games:
+        items:
+          $ref: '#/definitions/controllers.playerGameStatsResponse'
+        type: array
+      player:
+        $ref: '#/definitions/controllers.playerResponse'
+    type: object
+  controllers.rosterResponse:
+    properties:
+      players:
+        items:
+          $ref: '#/definitions/controllers.playerResponse'
+        type: array
+      user:
+        $ref: '#/definitions/controllers.userResponse'
+    type: object
+  controllers.updateRosterRequest:
+    properties:
+      add_players:
+        items:
+          type: integer
+        type: array
+      league_id:
+        type: integer
+      remove_players:
+        items:
+          type: integer
+        type: array
+      user_id:
+        type: integer
+    type: object
+  controllers.userResponse:
+    properties:
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API for authentication, players, leagues, and rosters.
+  title: Fantasy NBA API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a JWT token.
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.authRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.authTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Authenticate user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account with username and password.
+      parameters:
+      - description: Registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.authRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /league/:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a league created by the provided user.
+      parameters:
+      - description: Delete league request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.deleteLeagueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete league
+      tags:
+      - league
+    get:
+      description: Returns all leagues.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.leagueResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List leagues
+      tags:
+      - league
+    post:
+      consumes:
+      - application/json
+      description: Creates a league for the provided user.
+      parameters:
+      - description: Create league request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.createLeagueRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/controllers.leagueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create league
+      tags:
+      - league
+  /league/{id}:
+    get:
+      description: Returns a single league by ID.
+      parameters:
+      - description: League ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.leagueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get league by ID
+      tags:
+      - league
+  /league/{id}/rosters:
+    get:
+      description: Returns rosters grouped by user for the given league.
+      parameters:
+      - description: League ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.rosterResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get league rosters
+      tags:
+      - league
+  /league/join:
+    post:
+      consumes:
+      - application/json
+      description: Adds a user to an existing league.
+      parameters:
+      - description: Join league request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.joinLeagueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Join league
+      tags:
+      - league
+  /league/roster:
+    post:
+      consumes:
+      - application/json
+      description: Creates a roster of 10 unique players for a user in a league.
+      parameters:
+      - description: Create roster request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.createRosterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create roster
+      tags:
+      - league
+    put:
+      consumes:
+      - application/json
+      description: Swaps players in an existing league roster.
+      parameters:
+      - description: Update roster request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.updateRosterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update roster
+      tags:
+      - league
+  /players/:
+    get:
+      description: Returns players, optionally filtered by name and position.
+      parameters:
+      - description: Search by player name
+        in: query
+        name: search
+        type: string
+      - description: Filter by position
+        in: query
+        name: position
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.playerResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List players
+      tags:
+      - players
+  /players/{id}:
+    get:
+      description: Returns a player and their game stats.
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.playerStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get player by ID
+      tags:
+      - players
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

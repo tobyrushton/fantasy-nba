@@ -4,12 +4,21 @@ import (
 	"fmt"
 	"log"
 
+	swagger "github.com/gofiber/contrib/v3/swaggerui"
 	"github.com/gofiber/fiber/v3"
 	"github.com/tobyrushton/fantasy-nba/pkg/config"
 	"github.com/tobyrushton/fantasy-nba/pkg/controllers"
 	"github.com/tobyrushton/fantasy-nba/pkg/db"
 	"github.com/tobyrushton/fantasy-nba/pkg/db/models"
 )
+
+// @title Fantasy NBA API
+// @version 1.0
+// @description API for authentication, players, leagues, and rosters.
+// @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 
 func main() {
 	cfg := config.MustLoadConfig()
@@ -22,6 +31,14 @@ func main() {
 	repo := models.NewPostgresRepo(db)
 
 	app := fiber.New()
+
+	// set up swagger
+	swaggerCfg := swagger.Config{
+		FilePath: "./docs/swagger.json",
+		Path:     "docs",
+	}
+
+	app.Use(swagger.New(swaggerCfg))
 
 	// Set up routes
 
