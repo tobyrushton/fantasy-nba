@@ -119,8 +119,6 @@ func main() {
 		}
 	}
 
-	fmt.Println("games to scrape: ", gamesToScrape)
-
 	playerGameStats, err := s.GetGameStats(gamesToScrape)
 	if err != nil {
 		log.Fatalf("failed to scrape game stats: %v", err)

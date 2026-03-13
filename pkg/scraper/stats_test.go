@@ -17,7 +17,7 @@ func TestScraper_scrapeGameStats(t *testing.T) {
 		Body:       rc,
 	}, nil)
 
-	stats, err := s.scrapeGameStats("12345")
+	stats, err := s.scrapeGameStats("den-vs-gsw-23499485")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
