@@ -1,4 +1,4 @@
-package scraper_test
+package scraper
 
 import (
 	"io"

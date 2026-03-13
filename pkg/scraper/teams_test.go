@@ -1,16 +1,15 @@
-package scraper_test
+package scraper
 
 import (
 	"net/http"
 	"testing"
 
 	"github.com/tobyrushton/fantasy-nba/pkg/fakes"
-	"github.com/tobyrushton/fantasy-nba/pkg/scraper"
 )
 
 func TestScraper_GetTeams(t *testing.T) {
 	c := &fakes.FakeClient{}
-	s := scraper.New(c)
+	s := New(c)
 
 	rc := getReadCloser(t, "./testdata/nba_teams.html")
 	c.DoReturns(&http.Response{

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/tobyrushton/fantasy-nba/pkg/scraper"
+	"github.com/tobyrushton/fantasy-nba/pkg/client"
 )
 
 type FakeClient struct {
@@ -112,4 +112,4 @@ func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ scraper.Client = new(FakeClient)
+var _ client.Client = new(FakeClient)
