@@ -23,6 +23,8 @@ type Repo interface {
 	UpdateRoster(ctx context.Context, leagueID, userID int64, removePlayerIDs, addPlayerIDs []int64) error
 	GetPlayers(ctx context.Context, search, position string) ([]Player, error)
 	GetUsersInLeague(ctx context.Context, leagueID int) ([]*User, error)
+	GetPlayerByID(ctx context.Context, id int64) (*Player, error)
+	GetPlayerStatsByID(ctx context.Context, playerID int64) ([]*PlayerGameStats, error)
 }
 
 type PostgresRepo struct {
@@ -228,6 +230,26 @@ func (r *PostgresRepo) GetUsersInLeague(ctx context.Context, leagueID int) ([]*U
 	}
 
 	return users, nil
+}
+
+func (r *PostgresRepo) GetPlayerByID(ctx context.Context, id int64) (*Player, error) {
+	var player Player
+	err := r.db.NewSelect().Model(&player).Where("id = ?", id).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &player, nil
+}
+
+func (r *PostgresRepo) GetPlayerStatsByID(ctx context.Context, playerID int64) ([]*PlayerGameStats, error) {
+	var stats []*PlayerGameStats
+	err := r.db.NewSelect().Model(&stats).Where("player_id = ?", playerID).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 var _ Repo = (*PostgresRepo)(nil)
