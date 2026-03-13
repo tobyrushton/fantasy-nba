@@ -60,5 +60,21 @@ func main() {
 		log.Fatalf("failed to create users table: %v", err)
 	}
 
+	_, err = db.NewCreateTable().
+		Model((*models.League)(nil)).
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		log.Fatalf("failed to create leagues table: %v", err)
+	}
+
+	_, err = db.NewCreateTable().
+		Model((*models.LeagueMembership)(nil)).
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		log.Fatalf("failed to create league_memberships table: %v", err)
+	}
+
 	log.Println("Database migration completed successfully.")
 }

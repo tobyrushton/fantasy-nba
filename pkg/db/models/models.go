@@ -91,3 +91,26 @@ type User struct {
 	Username     string `bun:"username,notnull,unique"`
 	PasswordHash string `bun:"password_hash,notnull"`
 }
+
+type League struct {
+	bun.BaseModel `bun:"table:leagues,alias:l"`
+
+	ID        int64  `bun:"id,pk,autoincrement"`
+	Name      string `bun:"name,notnull"`
+	CreatorID int64  `bun:"creator_id,notnull"`
+
+	// Relations
+	Creator *User `bun:"rel:has-one,join:creator_id=id"`
+}
+
+type LeagueMembership struct {
+	bun.BaseModel `bun:"table:league_memberships,alias:lm"`
+
+	ID       int64 `bun:"id,pk,autoincrement"`
+	LeagueID int64 `bun:"league_id,notnull"`
+	UserID   int64 `bun:"user_id,notnull"`
+
+	// Relations
+	League *League `bun:"rel:has-one,join:league_id=id"`
+	User   *User   `bun:"rel:has-one,join:user_id=id"`
+}
