@@ -26,6 +26,12 @@ type joinLeagueRequest struct {
 	UserID   int64 `json:"user_id"`
 }
 
+type createRosterRequest struct {
+	LeagueID  int     `json:"league_id"`
+	UserID    int64   `json:"user_id"`
+	PlayerIDs []int64 `json:"player_ids"`
+}
+
 func NewLeagueController(repo models.Repo) *LeagueController {
 	return &LeagueController{repo: repo}
 }
@@ -97,4 +103,29 @@ func (c *LeagueController) JoinLeague(ctx fiber.Ctx) error {
 	}
 
 	return ctx.JSON(fiber.Map{"message": "successfully joined league"})
+}
+
+func (c *LeagueController) CreateRoster(ctx fiber.Ctx) error {
+	var req createRosterRequest
+	if err := ctx.Bind().Body(&req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if len(req.PlayerIDs) != 10 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "roster must contain exactly 10 players"})
+	}
+	contains := make(map[int64]interface{})
+	for _, id := range req.PlayerIDs {
+		if _, exists := contains[id]; exists {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "duplicate player IDs are not allowed"})
+		}
+		contains[id] = struct{}{}
+	}
+
+	// Create the roster
+	if err := c.repo.CreateRoster(ctx.Context(), int64(req.LeagueID), req.UserID, req.PlayerIDs); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create roster"})
+	}
+
+	return ctx.JSON(fiber.Map{"message": "roster created successfully"})
 }

@@ -18,6 +18,7 @@ type Repo interface {
 	GetLeagueByID(ctx context.Context, id int) (*League, error)
 	DeleteLeague(ctx context.Context, id int, userID int64) error
 	JoinLeague(ctx context.Context, leagueID int, userID int64) error
+	CreateRoster(ctx context.Context, leagueID, userID int64, playerIDs []int64) error
 }
 
 type PostgresRepo struct {
@@ -119,6 +120,29 @@ func (r *PostgresRepo) JoinLeague(ctx context.Context, leagueID int, userID int6
 	}
 
 	_, err = r.db.NewInsert().Model(membership).Exec(ctx)
+	return err
+}
+
+func (r *PostgresRepo) CreateRoster(ctx context.Context, leagueID, userID int64, playerIDs []int64) error {
+	// Check if league exists
+	league, err := r.GetLeagueByID(ctx, int(leagueID))
+	if err != nil {
+		return err
+	}
+	if league == nil {
+		return fmt.Errorf("league with id: %d does not exist", leagueID)
+	}
+
+	roster := make([]*TeamRoster, len(playerIDs))
+	for i, playerID := range playerIDs {
+		roster[i] = &TeamRoster{
+			LeagueID: leagueID,
+			UserID:   userID,
+			PlayerID: playerID,
+		}
+	}
+
+	_, err = r.db.NewInsert().Model(&roster).Exec(ctx)
 	return err
 }
 

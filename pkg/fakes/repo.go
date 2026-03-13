@@ -24,6 +24,20 @@ type FakeRepo struct {
 		result1 *models.League
 		result2 error
 	}
+	CreateRosterStub        func(context.Context, int64, int64, []int64) error
+	createRosterMutex       sync.RWMutex
+	createRosterArgsForCall []struct {
+		arg1 context.Context
+		arg2 int64
+		arg3 int64
+		arg4 []int64
+	}
+	createRosterReturns struct {
+		result1 error
+	}
+	createRosterReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CreateUserStub        func(context.Context, string, string) (*models.User, error)
 	createUserMutex       sync.RWMutex
 	createUserArgsForCall []struct {
@@ -174,6 +188,75 @@ func (fake *FakeRepo) CreateLeagueReturnsOnCall(i int, result1 *models.League, r
 		result1 *models.League
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeRepo) CreateRoster(arg1 context.Context, arg2 int64, arg3 int64, arg4 []int64) error {
+	var arg4Copy []int64
+	if arg4 != nil {
+		arg4Copy = make([]int64, len(arg4))
+		copy(arg4Copy, arg4)
+	}
+	fake.createRosterMutex.Lock()
+	ret, specificReturn := fake.createRosterReturnsOnCall[len(fake.createRosterArgsForCall)]
+	fake.createRosterArgsForCall = append(fake.createRosterArgsForCall, struct {
+		arg1 context.Context
+		arg2 int64
+		arg3 int64
+		arg4 []int64
+	}{arg1, arg2, arg3, arg4Copy})
+	stub := fake.CreateRosterStub
+	fakeReturns := fake.createRosterReturns
+	fake.recordInvocation("CreateRoster", []interface{}{arg1, arg2, arg3, arg4Copy})
+	fake.createRosterMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeRepo) CreateRosterCallCount() int {
+	fake.createRosterMutex.RLock()
+	defer fake.createRosterMutex.RUnlock()
+	return len(fake.createRosterArgsForCall)
+}
+
+func (fake *FakeRepo) CreateRosterCalls(stub func(context.Context, int64, int64, []int64) error) {
+	fake.createRosterMutex.Lock()
+	defer fake.createRosterMutex.Unlock()
+	fake.CreateRosterStub = stub
+}
+
+func (fake *FakeRepo) CreateRosterArgsForCall(i int) (context.Context, int64, int64, []int64) {
+	fake.createRosterMutex.RLock()
+	defer fake.createRosterMutex.RUnlock()
+	argsForCall := fake.createRosterArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeRepo) CreateRosterReturns(result1 error) {
+	fake.createRosterMutex.Lock()
+	defer fake.createRosterMutex.Unlock()
+	fake.CreateRosterStub = nil
+	fake.createRosterReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepo) CreateRosterReturnsOnCall(i int, result1 error) {
+	fake.createRosterMutex.Lock()
+	defer fake.createRosterMutex.Unlock()
+	fake.CreateRosterStub = nil
+	if fake.createRosterReturnsOnCall == nil {
+		fake.createRosterReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createRosterReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeRepo) CreateUser(arg1 context.Context, arg2 string, arg3 string) (*models.User, error) {

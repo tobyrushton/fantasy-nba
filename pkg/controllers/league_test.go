@@ -247,11 +247,80 @@ func (s *LeagueControllerSuite) TestJoinLeagueReturnsSuccessMessage() {
 	s.NoError(res.Body.Close())
 }
 
+func (s *LeagueControllerSuite) TestCreateRosterReturns400WhenBodyIsInvalid() {
+	repo := &fakes.FakeRepo{}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", "{bad-json")
+
+	s.Equal(fiber.StatusBadRequest, res.StatusCode)
+	s.Equal(0, repo.CreateRosterCallCount())
+	s.Equal(map[string]string{"error": "invalid request body"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestCreateRosterReturns400WhenPlayerCountIsNotTen() {
+	repo := &fakes.FakeRepo{}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", `{"league_id":7,"user_id":42,"player_ids":[1,2,3]}`)
+
+	s.Equal(fiber.StatusBadRequest, res.StatusCode)
+	s.Equal(0, repo.CreateRosterCallCount())
+	s.Equal(map[string]string{"error": "roster must contain exactly 10 players"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestCreateRosterReturns400WhenPlayerIDsAreDuplicated() {
+	repo := &fakes.FakeRepo{}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", `{"league_id":7,"user_id":42,"player_ids":[1,2,3,4,5,6,7,8,9,1]}`)
+
+	s.Equal(fiber.StatusBadRequest, res.StatusCode)
+	s.Equal(0, repo.CreateRosterCallCount())
+	s.Equal(map[string]string{"error": "duplicate player IDs are not allowed"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestCreateRosterReturns500WhenRepoFails() {
+	repo := &fakes.FakeRepo{}
+	repo.CreateRosterReturns(errors.New("db down"))
+	playerIDs := []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", `{"league_id":7,"user_id":42,"player_ids":[1,2,3,4,5,6,7,8,9,10]}`)
+
+	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.CreateRosterCallCount())
+
+	_, gotLeagueID, gotUserID, gotPlayerIDs := repo.CreateRosterArgsForCall(0)
+	s.Equal(int64(7), gotLeagueID)
+	s.Equal(int64(42), gotUserID)
+	s.Equal(playerIDs, gotPlayerIDs)
+	s.Equal(map[string]string{"error": "failed to create roster"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestCreateRosterReturnsSuccessMessage() {
+	repo := &fakes.FakeRepo{}
+	repo.CreateRosterReturns(nil)
+	playerIDs := []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", `{"league_id":7,"user_id":42,"player_ids":[1,2,3,4,5,6,7,8,9,10]}`)
+
+	s.Equal(fiber.StatusOK, res.StatusCode)
+	s.Equal(1, repo.CreateRosterCallCount())
+
+	_, gotLeagueID, gotUserID, gotPlayerIDs := repo.CreateRosterArgsForCall(0)
+	s.Equal(int64(7), gotLeagueID)
+	s.Equal(int64(42), gotUserID)
+	s.Equal(playerIDs, gotPlayerIDs)
+
+	var resp map[string]string
+	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
+	s.Equal("roster created successfully", resp["message"])
+	s.NoError(res.Body.Close())
+}
+
 func (s *LeagueControllerSuite) newApp(repo *fakes.FakeRepo) *fiber.App {
 	controller := NewLeagueController(repo)
 	app := fiber.New()
 	app.Post("/leagues", controller.CreateLeague)
 	app.Post("/leagues/join", controller.JoinLeague)
+	app.Post("/rosters", controller.CreateRoster)
 	app.Get("/leagues", controller.GetLeagues)
 	app.Get("/leagues/:id", controller.GetLeagueByID)
 	app.Delete("/leagues", controller.DeleteLeague)

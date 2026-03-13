@@ -114,3 +114,12 @@ type LeagueMembership struct {
 	League *League `bun:"rel:has-one,join:league_id=id"`
 	User   *User   `bun:"rel:has-one,join:user_id=id"`
 }
+
+type TeamRoster struct {
+	bun.BaseModel `bun:"table:team_rosters,alias:tr"`
+
+	ID       int64 `bun:"id,pk,autoincrement"`
+	LeagueID int64 `bun:"league_id,notnull"`
+	UserID   int64 `bun:"user_id,notnull"`
+	PlayerID int64 `bun:"player_id,notnull"`
+}
