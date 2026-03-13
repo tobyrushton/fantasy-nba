@@ -83,3 +83,11 @@ type PlayerGameStats struct {
 	Game   *Game   `bun:"rel:belongs-to,join:game_id=id"`
 	Team   *Team   `bun:"rel:belongs-to,join:team_id=id"`
 }
+
+type User struct {
+	bun.BaseModel `bun:"table:users,alias:u"`
+
+	ID           int64  `bun:"id,pk,autoincrement"`
+	Username     string `bun:"username,notnull,unique"`
+	PasswordHash string `bun:"password_hash,notnull"`
+}
