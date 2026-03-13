@@ -93,6 +93,21 @@ type FakeRepo struct {
 		result1 []*models.League
 		result2 error
 	}
+	GetPlayersStub        func(context.Context, string, string) ([]models.Player, error)
+	getPlayersMutex       sync.RWMutex
+	getPlayersArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+	}
+	getPlayersReturns struct {
+		result1 []models.Player
+		result2 error
+	}
+	getPlayersReturnsOnCall map[int]struct {
+		result1 []models.Player
+		result2 error
+	}
 	GetRostersByLeagueIDStub        func(context.Context, int) ([]*models.TeamRoster, error)
 	getRostersByLeagueIDMutex       sync.RWMutex
 	getRostersByLeagueIDArgsForCall []struct {
@@ -542,6 +557,72 @@ func (fake *FakeRepo) GetLeaguesReturnsOnCall(i int, result1 []*models.League, r
 	}
 	fake.getLeaguesReturnsOnCall[i] = struct {
 		result1 []*models.League
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetPlayers(arg1 context.Context, arg2 string, arg3 string) ([]models.Player, error) {
+	fake.getPlayersMutex.Lock()
+	ret, specificReturn := fake.getPlayersReturnsOnCall[len(fake.getPlayersArgsForCall)]
+	fake.getPlayersArgsForCall = append(fake.getPlayersArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.GetPlayersStub
+	fakeReturns := fake.getPlayersReturns
+	fake.recordInvocation("GetPlayers", []interface{}{arg1, arg2, arg3})
+	fake.getPlayersMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepo) GetPlayersCallCount() int {
+	fake.getPlayersMutex.RLock()
+	defer fake.getPlayersMutex.RUnlock()
+	return len(fake.getPlayersArgsForCall)
+}
+
+func (fake *FakeRepo) GetPlayersCalls(stub func(context.Context, string, string) ([]models.Player, error)) {
+	fake.getPlayersMutex.Lock()
+	defer fake.getPlayersMutex.Unlock()
+	fake.GetPlayersStub = stub
+}
+
+func (fake *FakeRepo) GetPlayersArgsForCall(i int) (context.Context, string, string) {
+	fake.getPlayersMutex.RLock()
+	defer fake.getPlayersMutex.RUnlock()
+	argsForCall := fake.getPlayersArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRepo) GetPlayersReturns(result1 []models.Player, result2 error) {
+	fake.getPlayersMutex.Lock()
+	defer fake.getPlayersMutex.Unlock()
+	fake.GetPlayersStub = nil
+	fake.getPlayersReturns = struct {
+		result1 []models.Player
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetPlayersReturnsOnCall(i int, result1 []models.Player, result2 error) {
+	fake.getPlayersMutex.Lock()
+	defer fake.getPlayersMutex.Unlock()
+	fake.GetPlayersStub = nil
+	if fake.getPlayersReturnsOnCall == nil {
+		fake.getPlayersReturnsOnCall = make(map[int]struct {
+			result1 []models.Player
+			result2 error
+		})
+	}
+	fake.getPlayersReturnsOnCall[i] = struct {
+		result1 []models.Player
 		result2 error
 	}{result1, result2}
 }

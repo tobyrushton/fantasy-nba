@@ -21,6 +21,7 @@ type Repo interface {
 	CreateRoster(ctx context.Context, leagueID, userID int64, playerIDs []int64) error
 	GetRostersByLeagueID(ctx context.Context, leagueID int) ([]*TeamRoster, error)
 	UpdateRoster(ctx context.Context, leagueID, userID int64, removePlayerIDs, addPlayerIDs []int64) error
+	GetPlayers(ctx context.Context, search, position string) ([]Player, error)
 }
 
 type PostgresRepo struct {
@@ -196,6 +197,26 @@ func (r *PostgresRepo) UpdateRoster(ctx context.Context, leagueID, userID int64,
 	}
 
 	return nil
+}
+
+func (r *PostgresRepo) GetPlayers(ctx context.Context, search, position string) ([]Player, error) {
+	var players []Player
+	query := r.db.NewSelect().Model(&players)
+
+	if search != "" {
+		query = query.Where("name ILIKE ?", "%"+search+"%")
+	}
+
+	if position != "" {
+		query = query.Where("position = ?", position)
+	}
+
+	err := query.Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return players, nil
 }
 
 var _ Repo = (*PostgresRepo)(nil)
