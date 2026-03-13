@@ -12,6 +12,7 @@ import (
 type Repo interface {
 	CreateUser(ctx context.Context, username, passwordHash string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
+	CreateLeague(ctx context.Context, name string, creatorID int64) (*League, error)
 }
 
 type PostgresRepo struct {
@@ -44,6 +45,20 @@ func (r *PostgresRepo) GetUserByUsername(ctx context.Context, username string) (
 	}
 
 	return user, nil
+}
+
+func (r *PostgresRepo) CreateLeague(ctx context.Context, name string, creatorID int64) (*League, error) {
+	league := &League{
+		Name:      name,
+		CreatorID: creatorID,
+	}
+
+	_, err := r.db.NewInsert().Model(league).Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return league, nil
 }
 
 var _ Repo = (*PostgresRepo)(nil)
