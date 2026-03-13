@@ -23,7 +23,7 @@ jobs:
       - name: Run gofmt
         id: gofmt
         run: |
-          unformatted=$(gofmt -l ./...)
+          unformatted=$(find . -name "*.go" -not -path "./vendor/*" | xargs gofmt -l)
           if [ -n "$unformatted" ]; then
             echo "The following files are not formatted correctly:"
             echo "$unformatted"
