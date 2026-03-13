@@ -15,6 +15,16 @@ func NewPlayersController(repo models.Repo) *PlayersController {
 	return &PlayersController{repo: repo}
 }
 
+// GetPlayers godoc
+// @Summary List players
+// @Description Returns players, optionally filtered by name and position.
+// @Tags players
+// @Produce json
+// @Param search query string false "Search by player name"
+// @Param position query string false "Filter by position"
+// @Success 200 {array} playerResponse
+// @Failure 500 {object} map[string]string
+// @Router /players/ [get]
 func (c *PlayersController) GetPlayers(ctx fiber.Ctx) error {
 	search := ctx.Query("search")
 	position := ctx.Query("position")
@@ -27,6 +37,17 @@ func (c *PlayersController) GetPlayers(ctx fiber.Ctx) error {
 	return ctx.JSON(newPlayerResponses(players))
 }
 
+// GetPlayer godoc
+// @Summary Get player by ID
+// @Description Returns a player and their game stats.
+// @Tags players
+// @Produce json
+// @Param id path int true "Player ID"
+// @Success 200 {object} playerStatsResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /players/{id} [get]
 func (c *PlayersController) GetPlayer(ctx fiber.Ctx) error {
 	idParam := ctx.Params("id")
 	id, err := strconv.ParseInt(idParam, 10, 64)

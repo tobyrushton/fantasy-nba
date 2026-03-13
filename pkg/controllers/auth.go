@@ -19,6 +19,10 @@ type authRequest struct {
 	Password string `json:"password"`
 }
 
+type authTokenResponse struct {
+	Token string `json:"token"`
+}
+
 func NewAuthController(repo models.Repo, secret string) *AuthController {
 	return &AuthController{
 		repo:   repo,
@@ -26,6 +30,16 @@ func NewAuthController(repo models.Repo, secret string) *AuthController {
 	}
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Creates a new user account with username and password.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body authRequest true "Registration request"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /auth/register [post]
 func (c *AuthController) Register(ctx fiber.Ctx) error {
 	var req authRequest
 	if err := ctx.Bind().Body(&req); err != nil {
@@ -46,6 +60,17 @@ func (c *AuthController) Register(ctx fiber.Ctx) error {
 	})
 }
 
+// Login godoc
+// @Summary Authenticate user
+// @Description Authenticates a user and returns a JWT token.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body authRequest true "Login request"
+// @Success 200 {object} authTokenResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/login [post]
 func (c *AuthController) Login(ctx fiber.Ctx) error {
 	var req authRequest
 	if err := ctx.Bind().Body(&req); err != nil {

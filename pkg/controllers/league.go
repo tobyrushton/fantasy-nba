@@ -43,6 +43,18 @@ func NewLeagueController(repo models.Repo) *LeagueController {
 	return &LeagueController{repo: repo}
 }
 
+// CreateLeague godoc
+// @Summary Create league
+// @Description Creates a league for the provided user.
+// @Tags league
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body createLeagueRequest true "Create league request"
+// @Success 201 {object} leagueResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /league/ [post]
 func (c *LeagueController) CreateLeague(ctx fiber.Ctx) error {
 	var req createLeagueRequest
 	if err := ctx.Bind().Body(&req); err != nil {
@@ -57,6 +69,15 @@ func (c *LeagueController) CreateLeague(ctx fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(newLeagueResponse(league))
 }
 
+// GetLeagues godoc
+// @Summary List leagues
+// @Description Returns all leagues.
+// @Tags league
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {array} leagueResponse
+// @Failure 500 {object} map[string]string
+// @Router /league/ [get]
 func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
 	leagues, err := c.repo.GetLeagues(ctx.Context())
 	if err != nil {
@@ -66,6 +87,18 @@ func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
 	return ctx.JSON(newLeagueResponses(leagues))
 }
 
+// GetLeagueByID godoc
+// @Summary Get league by ID
+// @Description Returns a single league by ID.
+// @Tags league
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "League ID"
+// @Success 200 {object} leagueResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /league/{id} [get]
 func (c *LeagueController) GetLeagueByID(ctx fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -84,6 +117,18 @@ func (c *LeagueController) GetLeagueByID(ctx fiber.Ctx) error {
 	return ctx.JSON(newLeagueResponse(league))
 }
 
+// DeleteLeague godoc
+// @Summary Delete league
+// @Description Deletes a league created by the provided user.
+// @Tags league
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body deleteLeagueRequest true "Delete league request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /league/ [delete]
 func (c *LeagueController) DeleteLeague(ctx fiber.Ctx) error {
 	var req deleteLeagueRequest
 	if err := ctx.Bind().Body(&req); err != nil {
@@ -98,6 +143,18 @@ func (c *LeagueController) DeleteLeague(ctx fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{"message": "league deleted successfully"})
 }
 
+// JoinLeague godoc
+// @Summary Join league
+// @Description Adds a user to an existing league.
+// @Tags league
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body joinLeagueRequest true "Join league request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /league/join [post]
 func (c *LeagueController) JoinLeague(ctx fiber.Ctx) error {
 	var req joinLeagueRequest
 	if err := ctx.Bind().Body(&req); err != nil {
@@ -112,6 +169,18 @@ func (c *LeagueController) JoinLeague(ctx fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{"message": "successfully joined league"})
 }
 
+// CreateRoster godoc
+// @Summary Create roster
+// @Description Creates a roster of 10 unique players for a user in a league.
+// @Tags league
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body createRosterRequest true "Create roster request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /league/roster [post]
 func (c *LeagueController) CreateRoster(ctx fiber.Ctx) error {
 	var req createRosterRequest
 	if err := ctx.Bind().Body(&req); err != nil {
@@ -137,6 +206,17 @@ func (c *LeagueController) CreateRoster(ctx fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{"message": "roster created successfully"})
 }
 
+// GetRostersByLeagueID godoc
+// @Summary Get league rosters
+// @Description Returns rosters grouped by user for the given league.
+// @Tags league
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "League ID"
+// @Success 200 {array} rosterResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /league/{id}/rosters [get]
 func (c *LeagueController) GetRostersByLeagueID(ctx fiber.Ctx) error {
 	leagueID, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -175,6 +255,18 @@ func (c *LeagueController) GetRostersByLeagueID(ctx fiber.Ctx) error {
 	return ctx.JSON(r)
 }
 
+// UpdateRoster godoc
+// @Summary Update roster
+// @Description Swaps players in an existing league roster.
+// @Tags league
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body updateRosterRequest true "Update roster request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /league/roster [put]
 func (c *LeagueController) UpdateRoster(ctx fiber.Ctx) error {
 	var req updateRosterRequest
 	if err := ctx.Bind().Body(&req); err != nil {
