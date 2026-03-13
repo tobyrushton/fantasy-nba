@@ -93,6 +93,34 @@ type FakeRepo struct {
 		result1 []*models.League
 		result2 error
 	}
+	GetPlayerByIDStub        func(context.Context, int64) (*models.Player, error)
+	getPlayerByIDMutex       sync.RWMutex
+	getPlayerByIDArgsForCall []struct {
+		arg1 context.Context
+		arg2 int64
+	}
+	getPlayerByIDReturns struct {
+		result1 *models.Player
+		result2 error
+	}
+	getPlayerByIDReturnsOnCall map[int]struct {
+		result1 *models.Player
+		result2 error
+	}
+	GetPlayerStatsByIDStub        func(context.Context, int64) ([]*models.PlayerGameStats, error)
+	getPlayerStatsByIDMutex       sync.RWMutex
+	getPlayerStatsByIDArgsForCall []struct {
+		arg1 context.Context
+		arg2 int64
+	}
+	getPlayerStatsByIDReturns struct {
+		result1 []*models.PlayerGameStats
+		result2 error
+	}
+	getPlayerStatsByIDReturnsOnCall map[int]struct {
+		result1 []*models.PlayerGameStats
+		result2 error
+	}
 	GetPlayersStub        func(context.Context, string, string) ([]models.Player, error)
 	getPlayersMutex       sync.RWMutex
 	getPlayersArgsForCall []struct {
@@ -571,6 +599,136 @@ func (fake *FakeRepo) GetLeaguesReturnsOnCall(i int, result1 []*models.League, r
 	}
 	fake.getLeaguesReturnsOnCall[i] = struct {
 		result1 []*models.League
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetPlayerByID(arg1 context.Context, arg2 int64) (*models.Player, error) {
+	fake.getPlayerByIDMutex.Lock()
+	ret, specificReturn := fake.getPlayerByIDReturnsOnCall[len(fake.getPlayerByIDArgsForCall)]
+	fake.getPlayerByIDArgsForCall = append(fake.getPlayerByIDArgsForCall, struct {
+		arg1 context.Context
+		arg2 int64
+	}{arg1, arg2})
+	stub := fake.GetPlayerByIDStub
+	fakeReturns := fake.getPlayerByIDReturns
+	fake.recordInvocation("GetPlayerByID", []interface{}{arg1, arg2})
+	fake.getPlayerByIDMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepo) GetPlayerByIDCallCount() int {
+	fake.getPlayerByIDMutex.RLock()
+	defer fake.getPlayerByIDMutex.RUnlock()
+	return len(fake.getPlayerByIDArgsForCall)
+}
+
+func (fake *FakeRepo) GetPlayerByIDCalls(stub func(context.Context, int64) (*models.Player, error)) {
+	fake.getPlayerByIDMutex.Lock()
+	defer fake.getPlayerByIDMutex.Unlock()
+	fake.GetPlayerByIDStub = stub
+}
+
+func (fake *FakeRepo) GetPlayerByIDArgsForCall(i int) (context.Context, int64) {
+	fake.getPlayerByIDMutex.RLock()
+	defer fake.getPlayerByIDMutex.RUnlock()
+	argsForCall := fake.getPlayerByIDArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeRepo) GetPlayerByIDReturns(result1 *models.Player, result2 error) {
+	fake.getPlayerByIDMutex.Lock()
+	defer fake.getPlayerByIDMutex.Unlock()
+	fake.GetPlayerByIDStub = nil
+	fake.getPlayerByIDReturns = struct {
+		result1 *models.Player
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetPlayerByIDReturnsOnCall(i int, result1 *models.Player, result2 error) {
+	fake.getPlayerByIDMutex.Lock()
+	defer fake.getPlayerByIDMutex.Unlock()
+	fake.GetPlayerByIDStub = nil
+	if fake.getPlayerByIDReturnsOnCall == nil {
+		fake.getPlayerByIDReturnsOnCall = make(map[int]struct {
+			result1 *models.Player
+			result2 error
+		})
+	}
+	fake.getPlayerByIDReturnsOnCall[i] = struct {
+		result1 *models.Player
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetPlayerStatsByID(arg1 context.Context, arg2 int64) ([]*models.PlayerGameStats, error) {
+	fake.getPlayerStatsByIDMutex.Lock()
+	ret, specificReturn := fake.getPlayerStatsByIDReturnsOnCall[len(fake.getPlayerStatsByIDArgsForCall)]
+	fake.getPlayerStatsByIDArgsForCall = append(fake.getPlayerStatsByIDArgsForCall, struct {
+		arg1 context.Context
+		arg2 int64
+	}{arg1, arg2})
+	stub := fake.GetPlayerStatsByIDStub
+	fakeReturns := fake.getPlayerStatsByIDReturns
+	fake.recordInvocation("GetPlayerStatsByID", []interface{}{arg1, arg2})
+	fake.getPlayerStatsByIDMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepo) GetPlayerStatsByIDCallCount() int {
+	fake.getPlayerStatsByIDMutex.RLock()
+	defer fake.getPlayerStatsByIDMutex.RUnlock()
+	return len(fake.getPlayerStatsByIDArgsForCall)
+}
+
+func (fake *FakeRepo) GetPlayerStatsByIDCalls(stub func(context.Context, int64) ([]*models.PlayerGameStats, error)) {
+	fake.getPlayerStatsByIDMutex.Lock()
+	defer fake.getPlayerStatsByIDMutex.Unlock()
+	fake.GetPlayerStatsByIDStub = stub
+}
+
+func (fake *FakeRepo) GetPlayerStatsByIDArgsForCall(i int) (context.Context, int64) {
+	fake.getPlayerStatsByIDMutex.RLock()
+	defer fake.getPlayerStatsByIDMutex.RUnlock()
+	argsForCall := fake.getPlayerStatsByIDArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeRepo) GetPlayerStatsByIDReturns(result1 []*models.PlayerGameStats, result2 error) {
+	fake.getPlayerStatsByIDMutex.Lock()
+	defer fake.getPlayerStatsByIDMutex.Unlock()
+	fake.GetPlayerStatsByIDStub = nil
+	fake.getPlayerStatsByIDReturns = struct {
+		result1 []*models.PlayerGameStats
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetPlayerStatsByIDReturnsOnCall(i int, result1 []*models.PlayerGameStats, result2 error) {
+	fake.getPlayerStatsByIDMutex.Lock()
+	defer fake.getPlayerStatsByIDMutex.Unlock()
+	fake.GetPlayerStatsByIDStub = nil
+	if fake.getPlayerStatsByIDReturnsOnCall == nil {
+		fake.getPlayerStatsByIDReturnsOnCall = make(map[int]struct {
+			result1 []*models.PlayerGameStats
+			result2 error
+		})
+	}
+	fake.getPlayerStatsByIDReturnsOnCall[i] = struct {
+		result1 []*models.PlayerGameStats
 		result2 error
 	}{result1, result2}
 }
