@@ -134,6 +134,21 @@ type FakeRepo struct {
 	joinLeagueReturnsOnCall map[int]struct {
 		result1 error
 	}
+	UpdateRosterStub        func(context.Context, int64, int64, []int64, []int64) error
+	updateRosterMutex       sync.RWMutex
+	updateRosterArgsForCall []struct {
+		arg1 context.Context
+		arg2 int64
+		arg3 int64
+		arg4 []int64
+		arg5 []int64
+	}
+	updateRosterReturns struct {
+		result1 error
+	}
+	updateRosterReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -720,6 +735,81 @@ func (fake *FakeRepo) JoinLeagueReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.joinLeagueReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepo) UpdateRoster(arg1 context.Context, arg2 int64, arg3 int64, arg4 []int64, arg5 []int64) error {
+	var arg4Copy []int64
+	if arg4 != nil {
+		arg4Copy = make([]int64, len(arg4))
+		copy(arg4Copy, arg4)
+	}
+	var arg5Copy []int64
+	if arg5 != nil {
+		arg5Copy = make([]int64, len(arg5))
+		copy(arg5Copy, arg5)
+	}
+	fake.updateRosterMutex.Lock()
+	ret, specificReturn := fake.updateRosterReturnsOnCall[len(fake.updateRosterArgsForCall)]
+	fake.updateRosterArgsForCall = append(fake.updateRosterArgsForCall, struct {
+		arg1 context.Context
+		arg2 int64
+		arg3 int64
+		arg4 []int64
+		arg5 []int64
+	}{arg1, arg2, arg3, arg4Copy, arg5Copy})
+	stub := fake.UpdateRosterStub
+	fakeReturns := fake.updateRosterReturns
+	fake.recordInvocation("UpdateRoster", []interface{}{arg1, arg2, arg3, arg4Copy, arg5Copy})
+	fake.updateRosterMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeRepo) UpdateRosterCallCount() int {
+	fake.updateRosterMutex.RLock()
+	defer fake.updateRosterMutex.RUnlock()
+	return len(fake.updateRosterArgsForCall)
+}
+
+func (fake *FakeRepo) UpdateRosterCalls(stub func(context.Context, int64, int64, []int64, []int64) error) {
+	fake.updateRosterMutex.Lock()
+	defer fake.updateRosterMutex.Unlock()
+	fake.UpdateRosterStub = stub
+}
+
+func (fake *FakeRepo) UpdateRosterArgsForCall(i int) (context.Context, int64, int64, []int64, []int64) {
+	fake.updateRosterMutex.RLock()
+	defer fake.updateRosterMutex.RUnlock()
+	argsForCall := fake.updateRosterArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+}
+
+func (fake *FakeRepo) UpdateRosterReturns(result1 error) {
+	fake.updateRosterMutex.Lock()
+	defer fake.updateRosterMutex.Unlock()
+	fake.UpdateRosterStub = nil
+	fake.updateRosterReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepo) UpdateRosterReturnsOnCall(i int, result1 error) {
+	fake.updateRosterMutex.Lock()
+	defer fake.updateRosterMutex.Unlock()
+	fake.UpdateRosterStub = nil
+	if fake.updateRosterReturnsOnCall == nil {
+		fake.updateRosterReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.updateRosterReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
