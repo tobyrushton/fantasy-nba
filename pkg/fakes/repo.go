@@ -39,6 +39,19 @@ type FakeRepo struct {
 		result1 *models.User
 		result2 error
 	}
+	DeleteLeagueStub        func(context.Context, int, int64) error
+	deleteLeagueMutex       sync.RWMutex
+	deleteLeagueArgsForCall []struct {
+		arg1 context.Context
+		arg2 int
+		arg3 int64
+	}
+	deleteLeagueReturns struct {
+		result1 error
+	}
+	deleteLeagueReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GetLeagueByIDStub        func(context.Context, int) (*models.League, error)
 	getLeagueByIDMutex       sync.RWMutex
 	getLeagueByIDArgsForCall []struct {
@@ -214,6 +227,69 @@ func (fake *FakeRepo) CreateUserReturnsOnCall(i int, result1 *models.User, resul
 		result1 *models.User
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeRepo) DeleteLeague(arg1 context.Context, arg2 int, arg3 int64) error {
+	fake.deleteLeagueMutex.Lock()
+	ret, specificReturn := fake.deleteLeagueReturnsOnCall[len(fake.deleteLeagueArgsForCall)]
+	fake.deleteLeagueArgsForCall = append(fake.deleteLeagueArgsForCall, struct {
+		arg1 context.Context
+		arg2 int
+		arg3 int64
+	}{arg1, arg2, arg3})
+	stub := fake.DeleteLeagueStub
+	fakeReturns := fake.deleteLeagueReturns
+	fake.recordInvocation("DeleteLeague", []interface{}{arg1, arg2, arg3})
+	fake.deleteLeagueMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeRepo) DeleteLeagueCallCount() int {
+	fake.deleteLeagueMutex.RLock()
+	defer fake.deleteLeagueMutex.RUnlock()
+	return len(fake.deleteLeagueArgsForCall)
+}
+
+func (fake *FakeRepo) DeleteLeagueCalls(stub func(context.Context, int, int64) error) {
+	fake.deleteLeagueMutex.Lock()
+	defer fake.deleteLeagueMutex.Unlock()
+	fake.DeleteLeagueStub = stub
+}
+
+func (fake *FakeRepo) DeleteLeagueArgsForCall(i int) (context.Context, int, int64) {
+	fake.deleteLeagueMutex.RLock()
+	defer fake.deleteLeagueMutex.RUnlock()
+	argsForCall := fake.deleteLeagueArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRepo) DeleteLeagueReturns(result1 error) {
+	fake.deleteLeagueMutex.Lock()
+	defer fake.deleteLeagueMutex.Unlock()
+	fake.DeleteLeagueStub = nil
+	fake.deleteLeagueReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepo) DeleteLeagueReturnsOnCall(i int, result1 error) {
+	fake.deleteLeagueMutex.Lock()
+	defer fake.deleteLeagueMutex.Unlock()
+	fake.DeleteLeagueStub = nil
+	if fake.deleteLeagueReturnsOnCall == nil {
+		fake.deleteLeagueReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteLeagueReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeRepo) GetLeagueByID(arg1 context.Context, arg2 int) (*models.League, error) {

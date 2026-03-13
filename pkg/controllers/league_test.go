@@ -159,12 +159,57 @@ func (s *LeagueControllerSuite) TestGetLeagueByIDReturnsLeague() {
 	s.NoError(res.Body.Close())
 }
 
+func (s *LeagueControllerSuite) TestDeleteLeagueReturns400WhenBodyIsInvalid() {
+	repo := &fakes.FakeRepo{}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodDelete, "/leagues", "{bad-json")
+
+	s.Equal(fiber.StatusBadRequest, res.StatusCode)
+	s.Equal(0, repo.DeleteLeagueCallCount())
+	s.Equal(map[string]string{"error": "invalid request body"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestDeleteLeagueReturns500WhenRepoFails() {
+	repo := &fakes.FakeRepo{}
+	repo.DeleteLeagueReturns(errors.New("db down"))
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodDelete, "/leagues", `{"id":7,"user_id":42}`)
+
+	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.DeleteLeagueCallCount())
+
+	_, gotID, gotUserID := repo.DeleteLeagueArgsForCall(0)
+	s.Equal(7, gotID)
+	s.Equal(int64(42), gotUserID)
+	s.Equal(map[string]string{"error": "failed to delete league"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestDeleteLeagueReturnsSuccessMessage() {
+	repo := &fakes.FakeRepo{}
+	repo.DeleteLeagueReturns(nil)
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodDelete, "/leagues", `{"id":7,"user_id":42}`)
+
+	s.Equal(fiber.StatusOK, res.StatusCode)
+	s.Equal(1, repo.DeleteLeagueCallCount())
+
+	_, gotID, gotUserID := repo.DeleteLeagueArgsForCall(0)
+	s.Equal(7, gotID)
+	s.Equal(int64(42), gotUserID)
+
+	var resp map[string]string
+	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
+	s.Equal("league deleted successfully", resp["message"])
+	s.NoError(res.Body.Close())
+}
+
 func (s *LeagueControllerSuite) newApp(repo *fakes.FakeRepo) *fiber.App {
 	controller := NewLeagueController(repo)
 	app := fiber.New()
 	app.Post("/leagues", controller.CreateLeague)
 	app.Get("/leagues", controller.GetLeagues)
 	app.Get("/leagues/:id", controller.GetLeagueByID)
+	app.Delete("/leagues", controller.DeleteLeague)
 	return app
 }
 

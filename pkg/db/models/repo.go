@@ -15,6 +15,7 @@ type Repo interface {
 	CreateLeague(ctx context.Context, name string, creatorID int64) (*League, error)
 	GetLeagues(ctx context.Context) ([]*League, error)
 	GetLeagueByID(ctx context.Context, id int) (*League, error)
+	DeleteLeague(ctx context.Context, id int, userID int64) error
 }
 
 type PostgresRepo struct {
@@ -81,6 +82,23 @@ func (r *PostgresRepo) GetLeagueByID(ctx context.Context, id int) (*League, erro
 	}
 
 	return league, nil
+}
+
+func (r *PostgresRepo) DeleteLeague(ctx context.Context, id int, userID int64) error {
+	// Check if league exists and if user is the creator
+	league, err := r.GetLeagueByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if league == nil {
+		return nil // League not found, treat as successful delete
+	}
+	if league.CreatorID != userID {
+		return nil // User is not the creator, treat as successful delete
+	}
+
+	_, err = r.db.NewDelete().Model(&League{ID: int64(id)}).Where("id = ?", id).Exec(ctx)
+	return err
 }
 
 var _ Repo = (*PostgresRepo)(nil)
