@@ -22,5 +22,5 @@ func (c *PlayersController) GetPlayers(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch players"})
 	}
 
-	return ctx.JSON(players)
+	return ctx.JSON(newPlayerResponses(players))
 }

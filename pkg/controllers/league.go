@@ -54,7 +54,7 @@ func (c *LeagueController) CreateLeague(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create league"})
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(league)
+	return ctx.Status(fiber.StatusCreated).JSON(newLeagueResponse(league))
 }
 
 func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
@@ -63,7 +63,7 @@ func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get leagues"})
 	}
 
-	return ctx.JSON(leagues)
+	return ctx.JSON(newLeagueResponses(leagues))
 }
 
 func (c *LeagueController) GetLeagueByID(ctx fiber.Ctx) error {
@@ -81,7 +81,7 @@ func (c *LeagueController) GetLeagueByID(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "league not found"})
 	}
 
-	return ctx.JSON(league)
+	return ctx.JSON(newLeagueResponse(league))
 }
 
 func (c *LeagueController) DeleteLeague(ctx fiber.Ctx) error {
@@ -148,12 +148,31 @@ func (c *LeagueController) GetRostersByLeagueID(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get rosters"})
 	}
 
-	groupByUser := make(map[int64][]models.Player)
+	groupByUser := make(map[int64][]playerResponse)
 	for _, roster := range rosters {
-		groupByUser[roster.UserID] = append(groupByUser[roster.UserID], *roster.Player)
+		if roster.Player == nil {
+			continue
+		}
+
+		groupByUser[roster.UserID] = append(groupByUser[roster.UserID], newPlayerResponse(*roster.Player))
 	}
 
-	return ctx.JSON(groupByUser)
+	users, err := c.repo.GetUsersInLeague(ctx.Context(), leagueID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get users in league"})
+	}
+
+	r := make([]rosterResponse, 0, len(groupByUser))
+	for _, user := range users {
+		if players, exists := groupByUser[user.ID]; exists {
+			r = append(r, rosterResponse{
+				Players: players,
+				User:    newUserResponse(*user),
+			})
+		}
+	}
+
+	return ctx.JSON(r)
 }
 
 func (c *LeagueController) UpdateRoster(ctx fiber.Ctx) error {

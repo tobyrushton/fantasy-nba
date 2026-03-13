@@ -97,12 +97,12 @@ func (s *PlayersControllerSuite) performRequest(app *fiber.App, method, path str
 	return res
 }
 
-func (s *PlayersControllerSuite) decodePlayersResponse(res *http.Response) []models.Player {
+func (s *PlayersControllerSuite) decodePlayersResponse(res *http.Response) []playerResponse {
 	s.T().Cleanup(func() {
 		s.NoError(res.Body.Close())
 	})
 
-	var players []models.Player
+	var players []playerResponse
 	err := json.NewDecoder(res.Body).Decode(&players)
 	s.Require().NoError(err)
 	return players

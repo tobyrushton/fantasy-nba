@@ -40,7 +40,7 @@ func (s *LeagueControllerSuite) TestCreateLeagueReturns201AndLeague() {
 	s.Equal("Champions", gotName)
 	s.Equal(int64(42), gotUserID)
 
-	var resp models.League
+	var resp leagueResponse
 	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
 	s.Equal(int64(7), resp.ID)
 	s.Equal("Champions", resp.Name)
@@ -81,7 +81,7 @@ func (s *LeagueControllerSuite) TestGetLeaguesReturnsLeagueList() {
 	s.Equal(fiber.StatusOK, res.StatusCode)
 	s.Equal(1, repo.GetLeaguesCallCount())
 
-	var resp []models.League
+	var resp []leagueResponse
 	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
 	s.Len(resp, 2)
 	s.Equal(int64(1), resp[0].ID)
@@ -151,7 +151,7 @@ func (s *LeagueControllerSuite) TestGetLeagueByIDReturnsLeague() {
 	_, gotID := repo.GetLeagueByIDArgsForCall(0)
 	s.Equal(7, gotID)
 
-	var resp models.League
+	var resp leagueResponse
 	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
 	s.Equal(int64(7), resp.ID)
 	s.Equal("Champions", resp.Name)
@@ -333,6 +333,7 @@ func (s *LeagueControllerSuite) TestGetRostersByLeagueIDReturns500WhenRepoFails(
 
 	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
 	s.Equal(1, repo.GetRostersByLeagueIDCallCount())
+	s.Equal(0, repo.GetUsersInLeagueCallCount())
 
 	_, gotLeagueID := repo.GetRostersByLeagueIDArgsForCall(0)
 	s.Equal(7, gotLeagueID)
@@ -346,23 +347,35 @@ func (s *LeagueControllerSuite) TestGetRostersByLeagueIDReturnsPlayersGroupedByU
 		{UserID: 42, Player: &models.Player{ID: 2, FirstName: "Klay", LastName: "Thompson"}},
 		{UserID: 84, Player: &models.Player{ID: 3, FirstName: "Nikola", LastName: "Jokic"}},
 	}, nil)
+	repo.GetUsersInLeagueReturns([]*models.User{
+		{ID: 42, Username: "toby"},
+		{ID: 84, Username: "alex"},
+	}, nil)
 
 	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/7/rosters", "")
 
 	s.Equal(fiber.StatusOK, res.StatusCode)
 	s.Equal(1, repo.GetRostersByLeagueIDCallCount())
+	s.Equal(1, repo.GetUsersInLeagueCallCount())
 
 	_, gotLeagueID := repo.GetRostersByLeagueIDArgsForCall(0)
 	s.Equal(7, gotLeagueID)
 
-	var resp map[string][]models.Player
+	_, gotUsersLeagueID := repo.GetUsersInLeagueArgsForCall(0)
+	s.Equal(7, gotUsersLeagueID)
+
+	var resp []rosterResponse
 	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
 	s.Len(resp, 2)
-	s.Len(resp["42"], 2)
-	s.Len(resp["84"], 1)
-	s.Equal("Stephen", resp["42"][0].FirstName)
-	s.Equal("Klay", resp["42"][1].FirstName)
-	s.Equal("Nikola", resp["84"][0].FirstName)
+	s.Equal(int64(42), resp[0].User.ID)
+	s.Equal("toby", resp[0].User.Username)
+	s.Len(resp[0].Players, 2)
+	s.Equal("Stephen", resp[0].Players[0].FirstName)
+	s.Equal("Klay", resp[0].Players[1].FirstName)
+	s.Equal(int64(84), resp[1].User.ID)
+	s.Equal("alex", resp[1].User.Username)
+	s.Len(resp[1].Players, 1)
+	s.Equal("Nikola", resp[1].Players[0].FirstName)
 	s.NoError(res.Body.Close())
 }
 
