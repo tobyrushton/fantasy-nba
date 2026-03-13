@@ -122,4 +122,9 @@ type TeamRoster struct {
 	LeagueID int64 `bun:"league_id,notnull"`
 	UserID   int64 `bun:"user_id,notnull"`
 	PlayerID int64 `bun:"player_id,notnull"`
+
+	// Relations
+	League *League `bun:"rel:has-one,join:league_id=id"`
+	User   *User   `bun:"rel:has-one,join:user_id=id"`
+	Player *Player `bun:"rel:has-one,join:player_id=id"`
 }

@@ -19,6 +19,7 @@ type Repo interface {
 	DeleteLeague(ctx context.Context, id int, userID int64) error
 	JoinLeague(ctx context.Context, leagueID int, userID int64) error
 	CreateRoster(ctx context.Context, leagueID, userID int64, playerIDs []int64) error
+	GetRostersByLeagueID(ctx context.Context, leagueID int) ([]*TeamRoster, error)
 }
 
 type PostgresRepo struct {
@@ -144,6 +145,16 @@ func (r *PostgresRepo) CreateRoster(ctx context.Context, leagueID, userID int64,
 
 	_, err = r.db.NewInsert().Model(&roster).Exec(ctx)
 	return err
+}
+
+func (r *PostgresRepo) GetRostersByLeagueID(ctx context.Context, leagueID int) ([]*TeamRoster, error) {
+	var rosters []*TeamRoster
+	err := r.db.NewSelect().Model(&rosters).Where("league_id = ?", leagueID).Relation("Player").Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return rosters, nil
 }
 
 var _ Repo = (*PostgresRepo)(nil)

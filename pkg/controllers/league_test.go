@@ -315,6 +315,57 @@ func (s *LeagueControllerSuite) TestCreateRosterReturnsSuccessMessage() {
 	s.NoError(res.Body.Close())
 }
 
+func (s *LeagueControllerSuite) TestGetRostersByLeagueIDReturns400WhenIDIsInvalid() {
+	repo := &fakes.FakeRepo{}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/not-a-number/rosters", "")
+
+	s.Equal(fiber.StatusBadRequest, res.StatusCode)
+	s.Equal(0, repo.GetRostersByLeagueIDCallCount())
+	s.Equal(map[string]string{"error": "invalid league ID"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestGetRostersByLeagueIDReturns500WhenRepoFails() {
+	repo := &fakes.FakeRepo{}
+	repo.GetRostersByLeagueIDReturns(nil, errors.New("db down"))
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/7/rosters", "")
+
+	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.GetRostersByLeagueIDCallCount())
+
+	_, gotLeagueID := repo.GetRostersByLeagueIDArgsForCall(0)
+	s.Equal(7, gotLeagueID)
+	s.Equal(map[string]string{"error": "failed to get rosters"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestGetRostersByLeagueIDReturnsPlayersGroupedByUser() {
+	repo := &fakes.FakeRepo{}
+	repo.GetRostersByLeagueIDReturns([]*models.TeamRoster{
+		{UserID: 42, Player: &models.Player{ID: 1, FirstName: "Stephen", LastName: "Curry"}},
+		{UserID: 42, Player: &models.Player{ID: 2, FirstName: "Klay", LastName: "Thompson"}},
+		{UserID: 84, Player: &models.Player{ID: 3, FirstName: "Nikola", LastName: "Jokic"}},
+	}, nil)
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/7/rosters", "")
+
+	s.Equal(fiber.StatusOK, res.StatusCode)
+	s.Equal(1, repo.GetRostersByLeagueIDCallCount())
+
+	_, gotLeagueID := repo.GetRostersByLeagueIDArgsForCall(0)
+	s.Equal(7, gotLeagueID)
+
+	var resp map[string][]models.Player
+	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
+	s.Len(resp, 2)
+	s.Len(resp["42"], 2)
+	s.Len(resp["84"], 1)
+	s.Equal("Stephen", resp["42"][0].FirstName)
+	s.Equal("Klay", resp["42"][1].FirstName)
+	s.Equal("Nikola", resp["84"][0].FirstName)
+	s.NoError(res.Body.Close())
+}
+
 func (s *LeagueControllerSuite) newApp(repo *fakes.FakeRepo) *fiber.App {
 	controller := NewLeagueController(repo)
 	app := fiber.New()
@@ -323,6 +374,7 @@ func (s *LeagueControllerSuite) newApp(repo *fakes.FakeRepo) *fiber.App {
 	app.Post("/rosters", controller.CreateRoster)
 	app.Get("/leagues", controller.GetLeagues)
 	app.Get("/leagues/:id", controller.GetLeagueByID)
+	app.Get("/leagues/:id/rosters", controller.GetRostersByLeagueID)
 	app.Delete("/leagues", controller.DeleteLeague)
 	return app
 }

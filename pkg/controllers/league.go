@@ -129,3 +129,22 @@ func (c *LeagueController) CreateRoster(ctx fiber.Ctx) error {
 
 	return ctx.JSON(fiber.Map{"message": "roster created successfully"})
 }
+
+func (c *LeagueController) GetRostersByLeagueID(ctx fiber.Ctx) error {
+	leagueID, err := strconv.Atoi(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid league ID"})
+	}
+
+	rosters, err := c.repo.GetRostersByLeagueID(ctx.Context(), leagueID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get rosters"})
+	}
+
+	groupByUser := make(map[int64][]models.Player)
+	for _, roster := range rosters {
+		groupByUser[roster.UserID] = append(groupByUser[roster.UserID], *roster.Player)
+	}
+
+	return ctx.JSON(groupByUser)
+}
