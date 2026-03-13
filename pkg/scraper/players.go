@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/tobyrushton/fantasy-nba/pkg/models"
 )
 
 type ScrapePlayer struct {
@@ -17,7 +16,7 @@ type ScrapePlayer struct {
 
 // GetPlayers retrieves the list of players from the website.
 // Requires a list of teams to scrape.
-func (s *Scraper) GetPlayers(teams []models.Team) ([]ScrapePlayer, error) {
+func (s *Scraper) GetPlayers(teams []ScrapedTeam) ([]ScrapePlayer, error) {
 	wg := sync.WaitGroup{}
 
 	players := make([]ScrapePlayer, 0)
@@ -40,7 +39,7 @@ func (s *Scraper) GetPlayers(teams []models.Team) ([]ScrapePlayer, error) {
 	return players, nil
 }
 
-func (s *Scraper) getPlayersForTeam(team models.Team) ([]ScrapePlayer, error) {
+func (s *Scraper) getPlayersForTeam(team ScrapedTeam) ([]ScrapePlayer, error) {
 	players := make([]ScrapePlayer, 0)
 	res, err := s.getPage(fmt.Sprintf("https://www.nba.com/team/%s/%s", team.NBAID, team.Abbreviation))
 	if err != nil {
