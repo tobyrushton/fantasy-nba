@@ -24,6 +24,20 @@ type FakeRepo struct {
 		result1 *models.User
 		result2 error
 	}
+	GetUserByUsernameStub        func(context.Context, string) (*models.User, error)
+	getUserByUsernameMutex       sync.RWMutex
+	getUserByUsernameArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	getUserByUsernameReturns struct {
+		result1 *models.User
+		result2 error
+	}
+	getUserByUsernameReturnsOnCall map[int]struct {
+		result1 *models.User
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -89,6 +103,71 @@ func (fake *FakeRepo) CreateUserReturnsOnCall(i int, result1 *models.User, resul
 		})
 	}
 	fake.createUserReturnsOnCall[i] = struct {
+		result1 *models.User
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetUserByUsername(arg1 context.Context, arg2 string) (*models.User, error) {
+	fake.getUserByUsernameMutex.Lock()
+	ret, specificReturn := fake.getUserByUsernameReturnsOnCall[len(fake.getUserByUsernameArgsForCall)]
+	fake.getUserByUsernameArgsForCall = append(fake.getUserByUsernameArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.GetUserByUsernameStub
+	fakeReturns := fake.getUserByUsernameReturns
+	fake.recordInvocation("GetUserByUsername", []interface{}{arg1, arg2})
+	fake.getUserByUsernameMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepo) GetUserByUsernameCallCount() int {
+	fake.getUserByUsernameMutex.RLock()
+	defer fake.getUserByUsernameMutex.RUnlock()
+	return len(fake.getUserByUsernameArgsForCall)
+}
+
+func (fake *FakeRepo) GetUserByUsernameCalls(stub func(context.Context, string) (*models.User, error)) {
+	fake.getUserByUsernameMutex.Lock()
+	defer fake.getUserByUsernameMutex.Unlock()
+	fake.GetUserByUsernameStub = stub
+}
+
+func (fake *FakeRepo) GetUserByUsernameArgsForCall(i int) (context.Context, string) {
+	fake.getUserByUsernameMutex.RLock()
+	defer fake.getUserByUsernameMutex.RUnlock()
+	argsForCall := fake.getUserByUsernameArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeRepo) GetUserByUsernameReturns(result1 *models.User, result2 error) {
+	fake.getUserByUsernameMutex.Lock()
+	defer fake.getUserByUsernameMutex.Unlock()
+	fake.GetUserByUsernameStub = nil
+	fake.getUserByUsernameReturns = struct {
+		result1 *models.User
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetUserByUsernameReturnsOnCall(i int, result1 *models.User, result2 error) {
+	fake.getUserByUsernameMutex.Lock()
+	defer fake.getUserByUsernameMutex.Unlock()
+	fake.GetUserByUsernameStub = nil
+	if fake.getUserByUsernameReturnsOnCall == nil {
+		fake.getUserByUsernameReturnsOnCall = make(map[int]struct {
+			result1 *models.User
+			result2 error
+		})
+	}
+	fake.getUserByUsernameReturnsOnCall[i] = struct {
 		result1 *models.User
 		result2 error
 	}{result1, result2}
