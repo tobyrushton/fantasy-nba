@@ -130,12 +130,13 @@ func (s *Scraper) scrapeGameStats(gameID string) ([]ScrapedPlayerStats, error) {
 
 func extractTeam(team teamData, gameID string, inactives map[int64]bool) []ScrapedPlayerStats {
 	var out []ScrapedPlayerStats
+	gameNBAID := strings.Split(gameID, "-")[3] // Extract NBAID from gameID
 
 	for _, p := range team.Players {
 		dnp := inactives[p.PersonID] || isDNP(p.Comment)
 		s := ScrapedPlayerStats{
 			PlayerID:   p.PersonID,
-			GameID:     gameID,
+			GameID:     gameNBAID,
 			TeamID:     team.TeamID,
 			DidNotPlay: dnp,
 		}
@@ -164,7 +165,7 @@ func extractTeam(team teamData, gameID string, inactives map[int64]bool) []Scrap
 		if !found {
 			out = append(out, ScrapedPlayerStats{
 				PlayerID:   id,
-				GameID:     gameID,
+				GameID:     gameNBAID,
 				TeamID:     team.TeamID,
 				DidNotPlay: true,
 			})

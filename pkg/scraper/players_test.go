@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -68,6 +69,8 @@ func TestScraper_getPlayersForTeam(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get players: %v", err)
 	}
+
+	fmt.Println(players)
 
 	// The Nuggets had 18 players on their roster at the time of writing this test.
 	if len(players) != 18 {

@@ -12,6 +12,8 @@ type ScrapePlayer struct {
 	FirstName string
 	LastName  string
 	Position  string
+	TeamNBAID string
+	NBAID     string
 }
 
 // GetPlayers retrieves the list of players from the website.
@@ -97,11 +99,21 @@ func (s *Scraper) getPlayersForTeam(team ScrapedTeam) ([]ScrapePlayer, error) {
 				return
 			}
 
+			playerLink := nameCell.Find("a").AttrOr("href", "")
+			if playerLink == "" {
+				return
+			}
+			// The player link looks like "/player/1629029/jayson-tatum".
+			parts := strings.Split(playerLink, "/")
+			nbaId := parts[2]
+
 			first, last := splitName(fullName)
 			players = append(players, ScrapePlayer{
 				FirstName: first,
 				LastName:  last,
 				Position:  position,
+				TeamNBAID: team.NBAID,
+				NBAID:     nbaId,
 			})
 		})
 	})
