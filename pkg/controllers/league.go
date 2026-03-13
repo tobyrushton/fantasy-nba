@@ -31,3 +31,12 @@ func (c *LeagueController) CreateLeague(ctx fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusCreated).JSON(league)
 }
+
+func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
+	leagues, err := c.repo.GetLeagues(ctx.Context())
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get leagues"})
+	}
+
+	return ctx.JSON(leagues)
+}

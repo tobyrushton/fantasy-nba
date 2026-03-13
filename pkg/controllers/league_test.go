@@ -69,10 +69,46 @@ func (s *LeagueControllerSuite) TestCreateLeagueReturns500WhenRepoFails() {
 	s.Equal(map[string]string{"error": "failed to create league"}, s.decodeErrorResponse(res))
 }
 
+func (s *LeagueControllerSuite) TestGetLeaguesReturnsLeagueList() {
+	repo := &fakes.FakeRepo{}
+	repo.GetLeaguesReturns([]*models.League{
+		{ID: 1, Name: "Champions", CreatorID: 42},
+		{ID: 2, Name: "Dynasty", CreatorID: 84},
+	}, nil)
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues", "")
+
+	s.Equal(fiber.StatusOK, res.StatusCode)
+	s.Equal(1, repo.GetLeaguesCallCount())
+
+	var resp []models.League
+	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
+	s.Len(resp, 2)
+	s.Equal(int64(1), resp[0].ID)
+	s.Equal("Champions", resp[0].Name)
+	s.Equal(int64(42), resp[0].CreatorID)
+	s.Equal(int64(2), resp[1].ID)
+	s.Equal("Dynasty", resp[1].Name)
+	s.Equal(int64(84), resp[1].CreatorID)
+	s.NoError(res.Body.Close())
+}
+
+func (s *LeagueControllerSuite) TestGetLeaguesReturns500WhenRepoFails() {
+	repo := &fakes.FakeRepo{}
+	repo.GetLeaguesReturns(nil, errors.New("db down"))
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues", "")
+
+	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.GetLeaguesCallCount())
+	s.Equal(map[string]string{"error": "failed to get leagues"}, s.decodeErrorResponse(res))
+}
+
 func (s *LeagueControllerSuite) newApp(repo *fakes.FakeRepo) *fiber.App {
 	controller := NewLeagueController(repo)
 	app := fiber.New()
 	app.Post("/leagues", controller.CreateLeague)
+	app.Get("/leagues", controller.GetLeagues)
 	return app
 }
 

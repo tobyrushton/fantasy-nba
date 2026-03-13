@@ -39,6 +39,19 @@ type FakeRepo struct {
 		result1 *models.User
 		result2 error
 	}
+	GetLeaguesStub        func(context.Context) ([]*models.League, error)
+	getLeaguesMutex       sync.RWMutex
+	getLeaguesArgsForCall []struct {
+		arg1 context.Context
+	}
+	getLeaguesReturns struct {
+		result1 []*models.League
+		result2 error
+	}
+	getLeaguesReturnsOnCall map[int]struct {
+		result1 []*models.League
+		result2 error
+	}
 	GetUserByUsernameStub        func(context.Context, string) (*models.User, error)
 	getUserByUsernameMutex       sync.RWMutex
 	getUserByUsernameArgsForCall []struct {
@@ -185,6 +198,70 @@ func (fake *FakeRepo) CreateUserReturnsOnCall(i int, result1 *models.User, resul
 	}
 	fake.createUserReturnsOnCall[i] = struct {
 		result1 *models.User
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetLeagues(arg1 context.Context) ([]*models.League, error) {
+	fake.getLeaguesMutex.Lock()
+	ret, specificReturn := fake.getLeaguesReturnsOnCall[len(fake.getLeaguesArgsForCall)]
+	fake.getLeaguesArgsForCall = append(fake.getLeaguesArgsForCall, struct {
+		arg1 context.Context
+	}{arg1})
+	stub := fake.GetLeaguesStub
+	fakeReturns := fake.getLeaguesReturns
+	fake.recordInvocation("GetLeagues", []interface{}{arg1})
+	fake.getLeaguesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepo) GetLeaguesCallCount() int {
+	fake.getLeaguesMutex.RLock()
+	defer fake.getLeaguesMutex.RUnlock()
+	return len(fake.getLeaguesArgsForCall)
+}
+
+func (fake *FakeRepo) GetLeaguesCalls(stub func(context.Context) ([]*models.League, error)) {
+	fake.getLeaguesMutex.Lock()
+	defer fake.getLeaguesMutex.Unlock()
+	fake.GetLeaguesStub = stub
+}
+
+func (fake *FakeRepo) GetLeaguesArgsForCall(i int) context.Context {
+	fake.getLeaguesMutex.RLock()
+	defer fake.getLeaguesMutex.RUnlock()
+	argsForCall := fake.getLeaguesArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRepo) GetLeaguesReturns(result1 []*models.League, result2 error) {
+	fake.getLeaguesMutex.Lock()
+	defer fake.getLeaguesMutex.Unlock()
+	fake.GetLeaguesStub = nil
+	fake.getLeaguesReturns = struct {
+		result1 []*models.League
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepo) GetLeaguesReturnsOnCall(i int, result1 []*models.League, result2 error) {
+	fake.getLeaguesMutex.Lock()
+	defer fake.getLeaguesMutex.Unlock()
+	fake.GetLeaguesStub = nil
+	if fake.getLeaguesReturnsOnCall == nil {
+		fake.getLeaguesReturnsOnCall = make(map[int]struct {
+			result1 []*models.League
+			result2 error
+		})
+	}
+	fake.getLeaguesReturnsOnCall[i] = struct {
+		result1 []*models.League
 		result2 error
 	}{result1, result2}
 }

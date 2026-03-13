@@ -13,6 +13,7 @@ type Repo interface {
 	CreateUser(ctx context.Context, username, passwordHash string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
 	CreateLeague(ctx context.Context, name string, creatorID int64) (*League, error)
+	GetLeagues(ctx context.Context) ([]*League, error)
 }
 
 type PostgresRepo struct {
@@ -59,6 +60,16 @@ func (r *PostgresRepo) CreateLeague(ctx context.Context, name string, creatorID 
 	}
 
 	return league, nil
+}
+
+func (r *PostgresRepo) GetLeagues(ctx context.Context) ([]*League, error) {
+	var leagues []*League
+	err := r.db.NewSelect().Model(&leagues).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return leagues, nil
 }
 
 var _ Repo = (*PostgresRepo)(nil)
