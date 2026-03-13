@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	jwtware "github.com/gofiber/contrib/v3/jwt"
 	"github.com/gofiber/fiber/v3"
 	"github.com/tobyrushton/fantasy-nba/pkg/db/models"
 	"github.com/tobyrushton/fantasy-nba/pkg/token"
@@ -76,6 +77,17 @@ func (c *AuthController) Login(ctx fiber.Ctx) error {
 	return ctx.Status(200).JSON(fiber.Map{
 		"token": token,
 	})
+}
+
+func (c *AuthController) Middleware(ctx fiber.Ctx) error {
+	return jwtware.New(jwtware.Config{
+		SigningKey: jwtware.SigningKey{Key: c.secret},
+		ErrorHandler: func(c fiber.Ctx, err error) error {
+			return c.Status(401).JSON(fiber.Map{
+				"message": "unauthorized",
+			})
+		},
+	})(ctx)
 }
 
 func generatePasswordHash(password string) string {
