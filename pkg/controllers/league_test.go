@@ -104,11 +104,67 @@ func (s *LeagueControllerSuite) TestGetLeaguesReturns500WhenRepoFails() {
 	s.Equal(map[string]string{"error": "failed to get leagues"}, s.decodeErrorResponse(res))
 }
 
+func (s *LeagueControllerSuite) TestGetLeagueByIDReturns400WhenIDIsInvalid() {
+	repo := &fakes.FakeRepo{}
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/not-a-number", "")
+
+	s.Equal(fiber.StatusBadRequest, res.StatusCode)
+	s.Equal(0, repo.GetLeagueByIDCallCount())
+	s.Equal(map[string]string{"error": "invalid league ID"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestGetLeagueByIDReturns500WhenRepoFails() {
+	repo := &fakes.FakeRepo{}
+	repo.GetLeagueByIDReturns(nil, errors.New("db down"))
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/7", "")
+
+	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.GetLeagueByIDCallCount())
+
+	_, gotID := repo.GetLeagueByIDArgsForCall(0)
+	s.Equal(7, gotID)
+	s.Equal(map[string]string{"error": "failed to get league"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestGetLeagueByIDReturns404WhenLeagueNotFound() {
+	repo := &fakes.FakeRepo{}
+	repo.GetLeagueByIDReturns(nil, nil)
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/7", "")
+
+	s.Equal(fiber.StatusNotFound, res.StatusCode)
+	s.Equal(1, repo.GetLeagueByIDCallCount())
+	s.Equal(map[string]string{"error": "league not found"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestGetLeagueByIDReturnsLeague() {
+	repo := &fakes.FakeRepo{}
+	repo.GetLeagueByIDReturns(&models.League{ID: 7, Name: "Champions", CreatorID: 42}, nil)
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/7", "")
+
+	s.Equal(fiber.StatusOK, res.StatusCode)
+	s.Equal(1, repo.GetLeagueByIDCallCount())
+
+	_, gotID := repo.GetLeagueByIDArgsForCall(0)
+	s.Equal(7, gotID)
+
+	var resp models.League
+	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
+	s.Equal(int64(7), resp.ID)
+	s.Equal("Champions", resp.Name)
+	s.Equal(int64(42), resp.CreatorID)
+	s.NoError(res.Body.Close())
+}
+
 func (s *LeagueControllerSuite) newApp(repo *fakes.FakeRepo) *fiber.App {
 	controller := NewLeagueController(repo)
 	app := fiber.New()
 	app.Post("/leagues", controller.CreateLeague)
 	app.Get("/leagues", controller.GetLeagues)
+	app.Get("/leagues/:id", controller.GetLeagueByID)
 	return app
 }
 

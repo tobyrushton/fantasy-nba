@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strconv"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/tobyrushton/fantasy-nba/pkg/db/models"
 )
@@ -39,4 +41,22 @@ func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
 	}
 
 	return ctx.JSON(leagues)
+}
+
+func (c *LeagueController) GetLeagueByID(ctx fiber.Ctx) error {
+	id, err := strconv.Atoi(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid league ID"})
+	}
+
+	league, err := c.repo.GetLeagueByID(ctx.Context(), id)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get league"})
+	}
+
+	if league == nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "league not found"})
+	}
+
+	return ctx.JSON(league)
 }
