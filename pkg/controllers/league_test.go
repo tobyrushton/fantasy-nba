@@ -45,6 +45,8 @@ func (s *LeagueControllerSuite) TestCreateLeagueReturns201AndLeague() {
 	s.Equal(int64(7), resp.ID)
 	s.Equal("Champions", resp.Name)
 	s.Equal(int64(42), resp.CreatorID)
+	s.Equal("Unknown", resp.CreatorUsername)
+	s.Equal(1, resp.MemberCount)
 	s.NoError(res.Body.Close())
 }
 
@@ -87,9 +89,14 @@ func (s *LeagueControllerSuite) TestGetLeaguesReturnsLeagueList() {
 	s.Equal(int64(1), resp[0].ID)
 	s.Equal("Champions", resp[0].Name)
 	s.Equal(int64(42), resp[0].CreatorID)
+	s.Equal("Unknown", resp[0].CreatorUsername)
+	s.Equal(1, resp[0].MemberCount)
 	s.Equal(int64(2), resp[1].ID)
 	s.Equal("Dynasty", resp[1].Name)
 	s.Equal(int64(84), resp[1].CreatorID)
+	s.Equal("Unknown", resp[1].CreatorUsername)
+	s.Equal(1, resp[1].MemberCount)
+	s.Equal(2, repo.GetUsersInLeagueCallCount())
 	s.NoError(res.Body.Close())
 }
 
@@ -156,6 +163,9 @@ func (s *LeagueControllerSuite) TestGetLeagueByIDReturnsLeague() {
 	s.Equal(int64(7), resp.ID)
 	s.Equal("Champions", resp.Name)
 	s.Equal(int64(42), resp.CreatorID)
+	s.Equal("Unknown", resp.CreatorUsername)
+	s.Equal(1, resp.MemberCount)
+	s.Equal(1, repo.GetUsersInLeagueCallCount())
 	s.NoError(res.Body.Close())
 }
 

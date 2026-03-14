@@ -1,0 +1,19 @@
+---
+import { AuthNav } from "@/components/auth-nav"
+import { LeaguesDashboard } from "@/components/leagues-dashboard"
+import Layout from "@/layouts/main.astro"
+---
+
+<Layout>
+  <main class="relative min-h-svh overflow-hidden p-4 md:p-10">
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(135deg,#f8fafc_0%,#ecfeff_45%,#fefce8_100%)]" />
+
+    <div class="mx-auto mb-4 flex w-full justify-end md:mb-6">
+      <AuthNav client:load />
+    </div>
+
+    <section class="mx-auto w-full max-w-5xl rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl md:p-8">
+      <LeaguesDashboard client:load />
+    </section>
+  </main>
+</Layout>

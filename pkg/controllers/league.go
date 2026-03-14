@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/gofiber/fiber/v3"
@@ -43,6 +44,39 @@ func NewLeagueController(repo models.Repo) *LeagueController {
 	return &LeagueController{repo: repo}
 }
 
+func (c *LeagueController) buildLeagueResponse(ctx context.Context, league *models.League) (leagueResponse, error) {
+	users, err := c.repo.GetUsersInLeague(ctx, int(league.ID))
+	if err != nil {
+		return leagueResponse{}, err
+	}
+
+	creatorUsername := "Unknown"
+	if league.Creator != nil && league.Creator.Username != "" {
+		creatorUsername = league.Creator.Username
+	}
+
+	creatorInLeague := false
+	memberCount := len(users)
+	for _, user := range users {
+		if user == nil {
+			continue
+		}
+
+		if user.ID == league.CreatorID {
+			creatorInLeague = true
+			if creatorUsername == "Unknown" && user.Username != "" {
+				creatorUsername = user.Username
+			}
+		}
+	}
+
+	if !creatorInLeague {
+		memberCount++
+	}
+
+	return newLeagueResponse(league, creatorUsername, memberCount), nil
+}
+
 // CreateLeague godoc
 // @Summary Create league
 // @Description Creates a league for the provided user.
@@ -66,7 +100,17 @@ func (c *LeagueController) CreateLeague(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create league"})
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(newLeagueResponse(league))
+	leagueWithCreator, err := c.repo.GetLeagueByID(ctx.Context(), int(league.ID))
+	if err == nil && leagueWithCreator != nil {
+		league = leagueWithCreator
+	}
+
+	resp, err := c.buildLeagueResponse(ctx.Context(), league)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get leagues"})
+	}
+
+	return ctx.Status(fiber.StatusCreated).JSON(resp)
 }
 
 // GetLeagues godoc
@@ -84,7 +128,16 @@ func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get leagues"})
 	}
 
-	return ctx.JSON(newLeagueResponses(leagues))
+	resp := make([]leagueResponse, 0, len(leagues))
+	for _, league := range leagues {
+		r, err := c.buildLeagueResponse(ctx.Context(), league)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get leagues"})
+		}
+		resp = append(resp, r)
+	}
+
+	return ctx.JSON(resp)
 }
 
 // GetLeagueByID godoc
@@ -114,7 +167,12 @@ func (c *LeagueController) GetLeagueByID(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "league not found"})
 	}
 
-	return ctx.JSON(newLeagueResponse(league))
+	resp, err := c.buildLeagueResponse(ctx.Context(), league)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get league"})
+	}
+
+	return ctx.JSON(resp)
 }
 
 // DeleteLeague godoc

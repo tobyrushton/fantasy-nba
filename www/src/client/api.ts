@@ -40,7 +40,9 @@ export interface UpdateRosterRequest {
 
 export interface LeagueResponse {
     creator_id: number
+    creator_username: string
     id: number
+    member_count: number
     name: string
 }
 

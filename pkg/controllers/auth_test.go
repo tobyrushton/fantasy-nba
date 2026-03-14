@@ -128,6 +128,44 @@ func (s *AuthControllerSuite) TestLoginReturns400WhenPasswordDoesNotMatch() {
 	s.Equal("invalid username or password", resp["message"])
 }
 
+func (s *AuthControllerSuite) TestMiddlewareAllowsValidBearerToken() {
+	repo := &fakes.FakeRepo{}
+	controller := NewAuthController(repo, s.secret)
+	app := fiber.New()
+	app.Use(controller.Middleware)
+	app.Get("/protected", func(ctx fiber.Ctx) error {
+		return ctx.SendStatus(fiber.StatusOK)
+	})
+
+	tok, err := token.GenerateToken(s.secret, 42)
+	s.Require().NoError(err)
+
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+tok)
+
+	res, err := app.Test(req)
+	s.Require().NoError(err)
+	s.Equal(fiber.StatusOK, res.StatusCode)
+	s.NoError(res.Body.Close())
+}
+
+func (s *AuthControllerSuite) TestMiddlewareRejectsMissingToken() {
+	repo := &fakes.FakeRepo{}
+	controller := NewAuthController(repo, s.secret)
+	app := fiber.New()
+	app.Use(controller.Middleware)
+	app.Get("/protected", func(ctx fiber.Ctx) error {
+		return ctx.SendStatus(fiber.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+
+	res, err := app.Test(req)
+	s.Require().NoError(err)
+	s.Equal(fiber.StatusUnauthorized, res.StatusCode)
+	s.NoError(res.Body.Close())
+}
+
 func (s *AuthControllerSuite) newApp(repo *fakes.FakeRepo) *fiber.App {
 	controller := NewAuthController(repo, s.secret)
 	app := fiber.New()

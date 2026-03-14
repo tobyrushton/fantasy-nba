@@ -12,6 +12,9 @@ export function AuthNav() {
         <Button asChild variant="outline" size="sm">
           <a href="/">Players</a>
         </Button>
+        <Button asChild variant="outline" size="sm">
+          <a href="/leagues">Leagues</a>
+        </Button>
         <Button
           size="sm"
           onClick={() => {

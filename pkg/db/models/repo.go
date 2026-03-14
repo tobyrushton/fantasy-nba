@@ -75,7 +75,7 @@ func (r *PostgresRepo) CreateLeague(ctx context.Context, name string, creatorID 
 
 func (r *PostgresRepo) GetLeagues(ctx context.Context) ([]*League, error) {
 	var leagues []*League
-	err := r.db.NewSelect().Model(&leagues).Scan(ctx)
+	err := r.db.NewSelect().Model(&leagues).Relation("Creator").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (r *PostgresRepo) GetLeagues(ctx context.Context) ([]*League, error) {
 
 func (r *PostgresRepo) GetLeagueByID(ctx context.Context, id int) (*League, error) {
 	league := &League{ID: int64(id)}
-	err := r.db.NewSelect().Model(league).Where("id = ?", id).Scan(ctx)
+	err := r.db.NewSelect().Model(league).Where("id = ?", id).Relation("Creator").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}

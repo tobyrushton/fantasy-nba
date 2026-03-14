@@ -3,9 +3,11 @@ package controllers
 import "github.com/tobyrushton/fantasy-nba/pkg/db/models"
 
 type leagueResponse struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	CreatorID int64  `json:"creator_id"`
+	ID              int64  `json:"id"`
+	Name            string `json:"name"`
+	CreatorID       int64  `json:"creator_id"`
+	CreatorUsername string `json:"creator_username"`
+	MemberCount     int    `json:"member_count"`
 }
 
 type playerResponse struct {
@@ -46,11 +48,13 @@ type playerStatsResponse struct {
 	Games  []playerGameStatsResponse `json:"games"`
 }
 
-func newLeagueResponse(league *models.League) leagueResponse {
+func newLeagueResponse(league *models.League, creatorUsername string, memberCount int) leagueResponse {
 	return leagueResponse{
-		ID:        league.ID,
-		Name:      league.Name,
-		CreatorID: league.CreatorID,
+		ID:              league.ID,
+		Name:            league.Name,
+		CreatorID:       league.CreatorID,
+		CreatorUsername: creatorUsername,
+		MemberCount:     memberCount,
 	}
 }
 
@@ -63,15 +67,6 @@ func newPlayerResponse(player models.Player) playerResponse {
 		Position:  player.Position,
 		TeamID:    player.TeamID,
 	}
-}
-
-func newLeagueResponses(leagues []*models.League) []leagueResponse {
-	resp := make([]leagueResponse, 0, len(leagues))
-	for _, league := range leagues {
-		resp = append(resp, newLeagueResponse(league))
-	}
-
-	return resp
 }
 
 func newPlayerResponses(players []models.Player) []playerResponse {

@@ -106,7 +106,7 @@ func (c *AuthController) Login(ctx fiber.Ctx) error {
 
 func (c *AuthController) Middleware(ctx fiber.Ctx) error {
 	return jwtware.New(jwtware.Config{
-		SigningKey: jwtware.SigningKey{Key: c.secret},
+		SigningKey: jwtware.SigningKey{Key: []byte(c.secret)},
 		ErrorHandler: func(c fiber.Ctx, err error) error {
 			return c.Status(401).JSON(fiber.Map{
 				"message": "unauthorized",

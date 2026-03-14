@@ -736,7 +736,13 @@ const docTemplate = `{
                 "creator_id": {
                     "type": "integer"
                 },
+                "creator_username": {
+                    "type": "string"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "member_count": {
                     "type": "integer"
                 },
                 "name": {
