@@ -20,24 +20,39 @@ type ScrapePlayer struct {
 // Requires a list of teams to scrape.
 func (s *Scraper) GetPlayers(teams []ScrapedTeam) ([]ScrapePlayer, error) {
 	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
 
 	players := make([]ScrapePlayer, 0)
+	errs := make([]string, 0)
 
 	// scrape each team in parallel to speed up the process
 	for _, team := range teams {
 		wg.Add(1)
-		go func() {
+		go func(team ScrapedTeam) {
+			defer wg.Done()
+
 			teamPlayers, err := s.getPlayersForTeam(team)
 			if err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Sprintf("team %s: %v", team.Name, err))
+				mu.Unlock()
 				return
 			}
+
+			mu.Lock()
 			players = append(players, teamPlayers...)
-			defer wg.Done()
-		}()
+			mu.Unlock()
+		}(team)
 	}
 
 	// wait for all goroutines to finish before returning the players
 	wg.Wait()
+
+	if len(errs) > 0 {
+		return players, fmt.Errorf("scrape completed with %d error(s):\n%s",
+			len(errs), strings.Join(errs, "\n"))
+	}
+
 	return players, nil
 }
 

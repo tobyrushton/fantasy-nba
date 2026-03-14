@@ -64,22 +64,47 @@ type playerStats struct {
 }
 
 func (s *Scraper) GetGameStats(gameIDs []string) ([]ScrapedPlayerStats, error) {
+	if len(gameIDs) == 0 {
+		return nil, nil
+	}
+
 	allStats := make([]ScrapedPlayerStats, 0)
+	errs := make([]string, 0)
 	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+
+	// Avoid overloading nba.com with one request per game all at once.
+	sem := make(chan struct{}, 5) // limit to 5 concurrent requests
 
 	for _, gameID := range gameIDs {
 		wg.Add(1)
 		go func(gID string) {
 			defer wg.Done()
+
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
 			stats, err := s.scrapeGameStats(gID)
 			if err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Sprintf("game %s: %v", gID, err))
+				mu.Unlock()
 				return
 			}
+
+			mu.Lock()
 			allStats = append(allStats, stats...)
+			mu.Unlock()
 		}(gameID)
 	}
 
 	wg.Wait()
+
+	if len(errs) > 0 {
+		return allStats, fmt.Errorf("scrape completed with %d error(s):\n%s",
+			len(errs), strings.Join(errs, "\n"))
+	}
+
 	return allStats, nil
 }
 
@@ -103,6 +128,7 @@ func (s *Scraper) scrapeGameStats(gameID string) ([]ScrapedPlayerStats, error) {
 	results := make([]ScrapedPlayerStats, 0)
 
 	raw := doc.Find("script#__NEXT_DATA__").Text()
+
 	if raw == "" {
 		return nil, fmt.Errorf("__NEXT_DATA__ script tag not found")
 	}
@@ -116,6 +142,7 @@ func (s *Scraper) scrapeGameStats(gameID string) ([]ScrapedPlayerStats, error) {
 
 	// Build a set of inactive personIDs per team for quick lookup.
 	inactiveHome := inactiveSet(game.HomeTeam.Inactive)
+
 	inactiveAway := inactiveSet(game.AwayTeam.Inactive)
 
 	results = append(results, extractTeam(game.HomeTeam, gameID, inactiveHome)...)

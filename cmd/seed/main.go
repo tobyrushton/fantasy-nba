@@ -83,6 +83,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to scrape games: %v", err)
 	}
+	fmt.Println(len(games))
 
 	dbGames := make([]*models.Game, len(games))
 	for i, game := range games {
@@ -109,19 +110,20 @@ func main() {
 		log.Fatalf("failed to select games with teams: %v", err)
 	}
 
-	log.Println("Scraping game stats")
-
 	gamesToScrape := make([]string, 0)
 
 	for _, game := range dbGames {
-		if game.GameDate.Before(time.Now()) {
+		if game.GameDate.Before(time.Now().Add(-time.Hour * 24)) {
 			gamesToScrape = append(gamesToScrape, fmt.Sprintf("%s-vs-%s-%s", game.HomeTeam.Abbreviation, game.AwayTeam.Abbreviation, game.NBAID))
 		}
 	}
 
 	playerGameStats, err := s.GetGameStats(gamesToScrape)
 	if err != nil {
-		log.Fatalf("failed to scrape game stats: %v", err)
+		// this is non-fatal since we can still seed the rest of the data, but we log it so we know to go back and fill in any missing stats later.
+		// there is a limitation of the nba website that some games are missing box scores so will return errors
+		// this is a limitation of the data collection method and not something that can be fixed so we should continue despite these errors.
+		log.Printf("failed to scrape some game stats: %v", err)
 	}
 
 	dbPlayerGameStats := make([]*models.PlayerGameStats, 0)
@@ -138,16 +140,22 @@ func main() {
 			log.Fatalf("failed to find game for game stat with game NBAID %s", stat.GameID)
 		}
 		dbPlayerGameStats = append(dbPlayerGameStats, &models.PlayerGameStats{
-			PlayerID:   player.ID,
-			GameID:     game.ID,
-			TeamID:     player.TeamID,
-			DidNotPlay: stat.DidNotPlay,
-			Points:     stat.Points,
-			Rebounds:   stat.Rebounds,
-			Assists:    stat.Assists,
-			Steals:     stat.Steals,
+			PlayerID:          player.ID,
+			GameID:            game.ID,
+			TeamID:            player.TeamID,
+			DidNotPlay:        stat.DidNotPlay,
+			Points:            stat.Points,
+			Rebounds:          stat.Rebounds,
+			Assists:           stat.Assists,
+			Steals:            stat.Steals,
+			Blocks:            stat.Blocks,
+			Turnovers:         stat.Turnovers,
+			ThreePointersMade: stat.ThreePointersMade,
+			FreeThrowsMade:    stat.FreeThrowsMade,
 		})
 	}
+
+	log.Printf("found %d player game stats", len(dbPlayerGameStats))
 
 	if _, err := db.NewInsert().Model(&dbPlayerGameStats).Returning("*").Exec(ctx); err != nil {
 		log.Fatalf("failed to insert player game stats: %v", err)
