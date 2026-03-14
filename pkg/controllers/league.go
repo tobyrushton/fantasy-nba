@@ -100,6 +100,10 @@ func (c *LeagueController) CreateLeague(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create league"})
 	}
 
+	if err := c.repo.JoinLeague(ctx.Context(), int(league.ID), req.UserID); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to join league"})
+	}
+
 	leagueWithCreator, err := c.repo.GetLeagueByID(ctx.Context(), int(league.ID))
 	if err == nil && leagueWithCreator != nil {
 		league = leagueWithCreator
@@ -256,6 +260,23 @@ func (c *LeagueController) CreateRoster(ctx fiber.Ctx) error {
 		contains[id] = struct{}{}
 	}
 
+	users, err := c.repo.GetUsersInLeague(ctx.Context(), req.LeagueID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get users in league"})
+	}
+
+	isMember := false
+	for _, user := range users {
+		if user != nil && user.ID == req.UserID {
+			isMember = true
+			break
+		}
+	}
+
+	if !isMember {
+		return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "user is not a member of this league"})
+	}
+
 	// Create the roster
 	if err := c.repo.CreateRoster(ctx.Context(), int64(req.LeagueID), req.UserID, req.PlayerIDs); err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create roster"})
@@ -300,14 +321,17 @@ func (c *LeagueController) GetRostersByLeagueID(ctx fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to get users in league"})
 	}
 
-	r := make([]rosterResponse, 0, len(groupByUser))
+	r := make([]rosterResponse, 0, len(users))
 	for _, user := range users {
-		if players, exists := groupByUser[user.ID]; exists {
-			r = append(r, rosterResponse{
-				Players: players,
-				User:    newUserResponse(*user),
-			})
+		if user == nil {
+			continue
 		}
+
+		players := groupByUser[user.ID]
+		r = append(r, rosterResponse{
+			Players: players,
+			User:    newUserResponse(*user),
+		})
 	}
 
 	return ctx.JSON(r)

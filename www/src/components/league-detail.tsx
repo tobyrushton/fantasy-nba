@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 
-import { ApiError, Client, type LeagueResponse, type RosterResponse } from "@/client/api"
+import { ApiError, Client, type LeagueResponse, type PlayerResponse, type RosterResponse } from "@/client/api"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { clearStoredAuthToken, getBrowserApiUrl, getStoredAuthToken } from "@/lib/auth"
 
 type AuthState = "loading" | "unauthenticated" | "ready"
@@ -30,15 +31,54 @@ function isUnauthorizedError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 401
 }
 
+function normalizeForSearch(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 export function LeagueDetail({ leagueId }: LeagueDetailProps) {
   const client = useMemo(() => new Client(getBrowserApiUrl()), [])
 
   const [authState, setAuthState] = useState<AuthState>("loading")
   const [token, setToken] = useState<string | null>(null)
+  const [userId, setUserId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSubmittingRoster, setIsSubmittingRoster] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [league, setLeague] = useState<LeagueResponse | null>(null)
   const [rosters, setRosters] = useState<RosterResponse[]>([])
+  const [players, setPlayers] = useState<PlayerResponse[]>([])
+  const [playerSearch, setPlayerSearch] = useState("")
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<number[]>([])
+
+  function parseUserID(tokenValue: string): number | null {
+    const parts = tokenValue.split(".")
+    if (parts.length < 2) {
+      return null
+    }
+
+    try {
+      const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/")
+      const padded = payload.padEnd(payload.length + ((4 - (payload.length % 4)) % 4), "=")
+      const decoded = window.atob(padded)
+      const claims = JSON.parse(decoded) as Record<string, unknown>
+      const claimUserID = claims.user_id
+
+      if (typeof claimUserID === "number" && Number.isFinite(claimUserID)) {
+        return claimUserID
+      }
+
+      return null
+    } catch {
+      return null
+    }
+  }
 
   useEffect(() => {
     const storedToken = getStoredAuthToken()
@@ -47,7 +87,15 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
       return
     }
 
+    const parsedUserID = parseUserID(storedToken)
+    if (!parsedUserID) {
+      clearStoredAuthToken()
+      setAuthState("unauthenticated")
+      return
+    }
+
     setToken(storedToken)
+    setUserId(parsedUserID)
     setAuthState("ready")
   }, [])
 
@@ -72,14 +120,16 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
       client.setToken(authToken)
 
       try {
-        const [leagueResponse, rostersResponse] = await Promise.all([
+        const [leagueResponse, rostersResponse, playersResponse] = await Promise.all([
           client.getLeagueById(leagueId),
           client.getLeagueRosters(leagueId),
+          client.getPlayers(),
         ])
 
         if (!cancelled) {
           setLeague(leagueResponse)
           setRosters(rostersResponse)
+          setPlayers(playersResponse)
         }
       } catch (loadError) {
         if (isUnauthorizedError(loadError)) {
@@ -108,6 +158,19 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
     }
   }, [authState, client, leagueId, token])
 
+  const filteredPlayers = useMemo(() => {
+    const query = normalizeForSearch(playerSearch)
+    if (query.length === 0) {
+      return players
+    }
+
+    return players.filter((player) => {
+      const fullName = normalizeForSearch(`${player.first_name} ${player.last_name}`)
+      const position = normalizeForSearch(player.position ?? "")
+      return fullName.includes(query) || position.includes(query)
+    })
+  }, [playerSearch, players])
+
   if (authState === "loading") {
     return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-600">Checking your session...</div>
   }
@@ -126,6 +189,50 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
 
   if (!league) {
     return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-600">League not found.</div>
+  }
+
+  const currentUserRoster = userId ? rosters.find((roster) => roster.user.id === userId) : undefined
+  const isLeagueMember = Boolean(currentUserRoster)
+  const hasTeam = Boolean(currentUserRoster && (currentUserRoster.players?.length ?? 0) > 0)
+
+  async function handleCreateTeam() {
+    if (!token || !userId) {
+      return
+    }
+
+    if (selectedPlayerIds.length !== 10) {
+      setError("Select exactly 10 players to create your team.")
+      return
+    }
+
+    setIsSubmittingRoster(true)
+    setError(null)
+    setSuccess(null)
+    client.setToken(token)
+
+    try {
+      await client.createRoster({
+        league_id: leagueId,
+        player_ids: selectedPlayerIds,
+        user_id: userId,
+      })
+
+      const refreshedRosters = await client.getLeagueRosters(leagueId)
+      setRosters(refreshedRosters)
+      setSelectedPlayerIds([])
+      setSuccess("Team created successfully.")
+    } catch (createError) {
+      if (isUnauthorizedError(createError)) {
+        clearStoredAuthToken()
+        setToken(null)
+        setAuthState("unauthenticated")
+        return
+      }
+
+      setError(getApiErrorMessage(createError))
+    } finally {
+      setIsSubmittingRoster(false)
+    }
   }
 
   return (
@@ -150,12 +257,15 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
           <p className="px-5 py-8 text-sm text-slate-600">No rosters have been submitted for this league yet.</p>
         ) : (
           <ul className="divide-y divide-slate-200">
-            {rosters.map((roster) => (
-              <li key={roster.user.id} className="px-5 py-4">
-                <p className="font-medium text-slate-900">{roster.user.username}</p>
-                <p className="mt-1 text-xs text-slate-500">{roster.players.length} players</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {roster.players.map((player) => (
+            {rosters.map((roster) => {
+              const rosterPlayers = roster.players ?? []
+
+              return (
+                <li key={roster.user.id} className="px-5 py-4">
+                  <p className="font-medium text-slate-900">{roster.user.username}</p>
+                  <p className="mt-1 text-xs text-slate-500">{rosterPlayers.length} players</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {rosterPlayers.map((player) => (
                     <a
                       key={player.id}
                       href={`/players/${player.id}`}
@@ -163,13 +273,102 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
                     >
                       {player.first_name} {player.last_name}
                     </a>
-                  ))}
-                </div>
-              </li>
-            ))}
+                    ))}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>
+
+      {isLeagueMember && !hasTeam ? (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <header className="border-b border-slate-200 px-5 py-4">
+            <h2 className="text-base font-semibold text-slate-900">Create Your Team</h2>
+            <p className="mt-1 text-sm text-slate-600">Pick exactly 10 players.</p>
+          </header>
+
+          <div className="px-5 py-4">
+            <p className="mb-3 text-sm text-slate-600">
+              Selected: <span className="font-semibold text-slate-900">{selectedPlayerIds.length}</span>/10
+            </p>
+            <div className="mb-3 space-y-1">
+              <label htmlFor="roster-player-search" className="text-sm font-medium text-slate-700">
+                Search players
+              </label>
+              <Input
+                id="roster-player-search"
+                value={playerSearch}
+                onChange={(event) => setPlayerSearch(event.target.value)}
+                placeholder="Search by player name or position"
+                className="h-10 border-slate-300 bg-white"
+              />
+            </div>
+            <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200 p-2">
+              <div className="grid gap-2 md:grid-cols-2">
+                {filteredPlayers.map((player) => {
+                  const isSelected = selectedPlayerIds.includes(player.id)
+
+                  return (
+                    <div
+                      key={player.id}
+                      className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                        isSelected
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="w-full text-left text-slate-800"
+                        onClick={() => {
+                          setSelectedPlayerIds((current) => {
+                            if (current.includes(player.id)) {
+                              return current.filter((id) => id !== player.id)
+                            }
+
+                            if (current.length >= 10) {
+                              return current
+                            }
+
+                            return [...current, player.id]
+                          })
+                        }}
+                      >
+                        <span className="font-medium">{player.first_name} {player.last_name}</span>
+                      </button>
+                      <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-600">
+                        <span>Position: {player.position || "N/A"}</span>
+                        <a href={`/players/${player.id}`} className="font-medium text-slate-800 underline underline-offset-2">
+                          View full stats
+                        </a>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <Button type="button" onClick={handleCreateTeam} disabled={isSubmittingRoster || selectedPlayerIds.length !== 10}>
+                {isSubmittingRoster ? "Creating team..." : "Create team"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setSelectedPlayerIds([])} disabled={isSubmittingRoster || selectedPlayerIds.length === 0}>
+                Clear selection
+              </Button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {!isLeagueMember ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Join this league before creating a team.
+        </p>
+      ) : null}
+
+      {success ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</p> : null}
     </section>
   )
 }
