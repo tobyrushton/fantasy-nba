@@ -270,9 +270,11 @@ export function LeaguesDashboard() {
               <li key={league.id} className="flex items-center justify-between gap-4 px-5 py-4">
                 <div>
                   <p className="font-medium text-slate-900">{league.name}</p>
-                  <p className="text-xs text-slate-500">Creator: {league.creator_username} • Members: {league.member_count}</p>
+                  <p className="text-xs text-slate-500">League ID: {league.id} • Creator: {league.creator_username} • Members: {league.member_count}</p>
                 </div>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">{league.member_count} members</span>
+                <Button asChild variant="outline" size="sm">
+                  <a href={`/leagues/${league.id}`}>View league</a>
+                </Button>
               </li>
             ))}
           </ul>
