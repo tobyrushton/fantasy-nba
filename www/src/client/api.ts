@@ -122,7 +122,10 @@ export class Client {
         this.apiUrl = url.replace(/\/+$/, "")
         this.token = options.token
         this.defaultHeaders = options.defaultHeaders ?? {}
-        this.fetchFn = options.fetchFn ?? fetch
+        const configuredFetch = options.fetchFn
+        this.fetchFn = configuredFetch
+            ? (input, init) => configuredFetch(input, init)
+            : (input, init) => globalThis.fetch(input, init)
     }
 
     setToken(token: string | undefined): void {

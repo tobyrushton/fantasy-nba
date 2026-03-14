@@ -1,0 +1,31 @@
+---
+import { AuthForm } from "@/components/auth-form"
+import Layout from "@/layouts/main.astro"
+---
+
+<Layout>
+  <main class="relative min-h-svh overflow-hidden px-4 py-8 md:px-10 md:py-12">
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(145deg,#f8fafc_0%,#e0f2fe_52%,#fff7ed_100%)]" />
+
+    <section class="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl md:p-8">
+      <a href="/" class="inline-flex items-center text-sm font-medium text-slate-600 transition-colors hover:text-slate-900">
+        ← Back to players
+      </a>
+
+      <header class="mt-5">
+        <p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Fantasy NBA</p>
+        <h1 class="mt-2 text-3xl font-semibold text-slate-900">Log in</h1>
+        <p class="mt-2 text-sm text-slate-600">Use your account to manage leagues and rosters.</p>
+      </header>
+
+      <div class="mt-6">
+        <AuthForm client:load mode="login" />
+      </div>
+
+      <p class="mt-5 text-sm text-slate-600">
+        New here?
+        <a href="/register" class="font-semibold text-slate-900 underline underline-offset-2">Create an account</a>.
+      </p>
+    </section>
+  </main>
+</Layout>

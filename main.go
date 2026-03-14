@@ -6,6 +6,7 @@ import (
 
 	swagger "github.com/gofiber/contrib/v3/swaggerui"
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/tobyrushton/fantasy-nba/pkg/config"
 	"github.com/tobyrushton/fantasy-nba/pkg/controllers"
 	"github.com/tobyrushton/fantasy-nba/pkg/db"
@@ -31,6 +32,11 @@ func main() {
 	repo := models.NewPostgresRepo(db)
 
 	app := fiber.New()
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost:4321", "http://127.0.0.1:4321", "http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+	}))
 
 	// set up swagger
 	swaggerCfg := swagger.Config{

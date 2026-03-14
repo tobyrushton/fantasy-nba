@@ -2,8 +2,9 @@
 import Layout from "@/layouts/main.astro"
 import { Client } from "@/client/api"
 import { PlayersExplorer } from "@/components/players-explorer"
+import { AuthNav } from "@/components/auth-nav"
 
-const client = new Client(import.meta.env.API_URL)
+const client = new Client(import.meta.env.PUBLIC_API_URL)
 
 const players = await client.getPlayers()
 ---
@@ -11,6 +12,9 @@ const players = await client.getPlayers()
 <Layout>
   <main class="relative min-h-svh overflow-hidden p-4 md:p-10">
     <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(140deg,#f8fafc_0%,#eff6ff_48%,#fffbeb_100%)]" />
+    <div class="mx-auto mb-4 flex w-full justify-end md:mb-6">
+      <AuthNav client:load />
+    </div>
     <div class="mx-auto w-full">
       <PlayersExplorer client:load players={players} />
     </div>
