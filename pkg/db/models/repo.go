@@ -204,7 +204,7 @@ func (r *PostgresRepo) UpdateRoster(ctx context.Context, leagueID, userID int64,
 
 func (r *PostgresRepo) GetPlayers(ctx context.Context, search, position string) ([]Player, error) {
 	var players []Player
-	query := r.db.NewSelect().Model(&players)
+	query := r.db.NewSelect().Model(&players).Relation("Team")
 
 	if search != "" {
 		query = query.Where("name ILIKE ?", "%"+search+"%")

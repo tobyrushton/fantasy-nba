@@ -131,7 +131,7 @@ export function PlayersExplorer({ players }: PlayersExplorerProps) {
                   Position: {player.position || "N/A"}
                 </span>
                 <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 font-medium text-slate-700">
-                  Team: {player.team_id}
+                  Team: {player.team_name || "Unknown"}
                 </span>
               </div>
               <Button asChild size="sm" className="mt-4 w-full">

@@ -66,6 +66,7 @@ export interface PlayerResponse {
     last_name: string
     nba_id: string
     position: string
+    team_name: string
     team_id: number
 }
 

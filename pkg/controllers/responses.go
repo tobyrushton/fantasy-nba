@@ -16,6 +16,7 @@ type playerResponse struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Position  string `json:"position"`
+	TeamName  string `json:"team_name"`
 	TeamID    int64  `json:"team_id"`
 }
 
@@ -59,12 +60,18 @@ func newLeagueResponse(league *models.League, creatorUsername string, memberCoun
 }
 
 func newPlayerResponse(player models.Player) playerResponse {
+	teamName := ""
+	if player.Team != nil {
+		teamName = player.Team.Name
+	}
+
 	return playerResponse{
 		ID:        player.ID,
 		NBAID:     player.NBAID,
 		FirstName: player.FirstName,
 		LastName:  player.LastName,
 		Position:  player.Position,
+		TeamName:  teamName,
 		TeamID:    player.TeamID,
 	}
 }
