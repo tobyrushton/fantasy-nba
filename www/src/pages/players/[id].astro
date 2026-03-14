@@ -15,7 +15,7 @@ if (!Number.isInteger(playerId) || playerId <= 0) {
   errorMessage = "Invalid player ID"
 } else {
   try {
-    const client = new Client(import.meta.env.API_URL)
+    const client = new Client(import.meta.env.PUBLIC_API_URL)
     playerStats = await client.getPlayer(playerId)
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
