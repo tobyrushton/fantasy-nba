@@ -49,6 +49,7 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
   const [userId, setUserId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmittingRoster, setIsSubmittingRoster] = useState(false)
+  const [isDeletingLeague, setIsDeletingLeague] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [league, setLeague] = useState<LeagueResponse | null>(null)
@@ -182,6 +183,7 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
 
     return rosters.find((roster) => roster.user.id === userId)
   }, [rosters, userId])
+  const isLeagueOwner = Boolean(userId && league?.creator_id === userId)
   const isLeagueMember = Boolean(currentUserRoster)
   const rosterPlayers = useMemo(() => currentUserRoster?.players ?? [], [currentUserRoster])
   const hasTeam = rosterPlayers.length > 0
@@ -324,14 +326,64 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
     }
   }
 
+  async function handleDeleteLeague() {
+    if (!token || !userId || !league) {
+      return
+    }
+
+    const confirmed = window.confirm(`Delete league "${league.name}"? This cannot be undone.`)
+    if (!confirmed) {
+      return
+    }
+
+    setIsDeletingLeague(true)
+    setError(null)
+    setSuccess(null)
+    client.setToken(token)
+
+    try {
+      await client.deleteLeague({
+        id: league.id,
+        user_id: userId,
+      })
+
+      window.location.href = "/leagues"
+    } catch (deleteError) {
+      if (isUnauthorizedError(deleteError)) {
+        clearStoredAuthToken()
+        setToken(null)
+        setAuthState("unauthenticated")
+        return
+      }
+
+      setError(getApiErrorMessage(deleteError))
+    } finally {
+      setIsDeletingLeague(false)
+    }
+  }
+
   return (
     <section className="space-y-6">
       <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">League</p>
-        <h1 className="mt-2 text-3xl font-semibold text-slate-900">{league.name}</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          League ID: {league.id} • Creator: {league.creator_username} • Members: {league.member_count}
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">League</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">{league.name}</h1>
+            <p className="mt-2 text-sm text-slate-600">
+              League ID: {league.id} • Creator: {league.creator_username} • Members: {league.member_count}
+            </p>
+          </div>
+          {isLeagueOwner ? (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteLeague}
+              disabled={isDeletingLeague || isSubmittingRoster}
+            >
+              {isDeletingLeague ? "Deleting league..." : "Delete league"}
+            </Button>
+          ) : null}
+        </div>
       </header>
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
