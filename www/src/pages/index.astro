@@ -1,17 +1,18 @@
 ---
 import Layout from "@/layouts/main.astro"
-import { Button } from "@/components/ui/button"
+import { Client } from "@/client/api"
+import { PlayersExplorer } from "@/components/players-explorer"
+
+const client = new Client(import.meta.env.API_URL)
+
+const players = await client.getPlayers()
 ---
 
 <Layout>
-  <div class="flex min-h-svh p-6">
-    <div class="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-      <div>
-        <h1 class="font-medium">Project ready!</h1>
-        <p>You may now add components and start building.</p>
-        <p>We've already added the button component for you.</p>
-        <Button client:load className="mt-2">Button</Button>
-      </div>
+  <main class="relative min-h-svh overflow-hidden p-4 md:p-10">
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(140deg,#f8fafc_0%,#eff6ff_48%,#fffbeb_100%)]" />
+    <div class="mx-auto w-full">
+      <PlayersExplorer client:load players={players} />
     </div>
-  </div>
+  </main>
 </Layout>
