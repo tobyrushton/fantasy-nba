@@ -63,6 +63,10 @@ definitions:
         type: integer
       blocks:
         type: integer
+      did_not_play:
+        type: boolean
+      game_date:
+        type: string
       made_free_throws:
         type: integer
       made_three_pointers:
@@ -92,6 +96,8 @@ definitions:
         type: string
       team_id:
         type: integer
+      team_name:
+        type: string
     type: object
   controllers.playerStatsResponse:
     properties:
@@ -230,6 +236,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -252,6 +264,12 @@ paths:
             items:
               $ref: '#/definitions/controllers.leagueResponse'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -287,6 +305,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -316,6 +340,12 @@ paths:
             $ref: '#/definitions/controllers.leagueResponse'
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -361,6 +391,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -395,6 +431,12 @@ paths:
             type: object
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -437,6 +479,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -470,6 +524,12 @@ paths:
             type: object
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string

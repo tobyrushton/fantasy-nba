@@ -87,6 +87,7 @@ func (c *LeagueController) buildLeagueResponse(ctx context.Context, league *mode
 // @Param request body createLeagueRequest true "Create league request"
 // @Success 201 {object} leagueResponse
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /league/ [post]
 func (c *LeagueController) CreateLeague(ctx fiber.Ctx) error {
@@ -124,6 +125,7 @@ func (c *LeagueController) CreateLeague(ctx fiber.Ctx) error {
 // @Produce json
 // @Security ApiKeyAuth
 // @Success 200 {array} leagueResponse
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /league/ [get]
 func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
@@ -153,6 +155,7 @@ func (c *LeagueController) GetLeagues(ctx fiber.Ctx) error {
 // @Param id path int true "League ID"
 // @Success 200 {object} leagueResponse
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /league/{id} [get]
@@ -189,6 +192,7 @@ func (c *LeagueController) GetLeagueByID(ctx fiber.Ctx) error {
 // @Param request body deleteLeagueRequest true "Delete league request"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /league/ [delete]
 func (c *LeagueController) DeleteLeague(ctx fiber.Ctx) error {
@@ -215,6 +219,7 @@ func (c *LeagueController) DeleteLeague(ctx fiber.Ctx) error {
 // @Param request body joinLeagueRequest true "Join league request"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /league/join [post]
 func (c *LeagueController) JoinLeague(ctx fiber.Ctx) error {
@@ -241,6 +246,8 @@ func (c *LeagueController) JoinLeague(ctx fiber.Ctx) error {
 // @Param request body createRosterRequest true "Create roster request"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /league/roster [post]
 func (c *LeagueController) CreateRoster(ctx fiber.Ctx) error {
@@ -294,6 +301,7 @@ func (c *LeagueController) CreateRoster(ctx fiber.Ctx) error {
 // @Param id path int true "League ID"
 // @Success 200 {array} rosterResponse
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /league/{id}/rosters [get]
 func (c *LeagueController) GetRostersByLeagueID(ctx fiber.Ctx) error {
@@ -347,6 +355,7 @@ func (c *LeagueController) GetRostersByLeagueID(ctx fiber.Ctx) error {
 // @Param request body updateRosterRequest true "Update roster request"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /league/roster [put]
 func (c *LeagueController) UpdateRoster(ctx fiber.Ctx) error {

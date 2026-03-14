@@ -64,6 +64,9 @@ func (c *PlayersController) GetPlayer(ctx fiber.Ctx) error {
 	}
 
 	playerStats, err := c.repo.GetPlayerStatsByID(ctx.Context(), id)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch player stats"})
+	}
 
 	return ctx.JSON(newPlayerStatsResponse(*player, playerStats))
 }
