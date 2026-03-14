@@ -28,15 +28,17 @@ type userResponse struct {
 }
 
 type playerGameStatsResponse struct {
-	PlayerID          int64 `json:"player_id"`
-	Points            int   `json:"points"`
-	Rebounds          int   `json:"rebounds"`
-	Assists           int   `json:"assists"`
-	Steals            int   `json:"steals"`
-	Blocks            int   `json:"blocks"`
-	Turnovers         int   `json:"turnovers"`
-	MadeThreePointers int   `json:"made_three_pointers"`
-	MadeFreeThrows    int   `json:"made_free_throws"`
+	PlayerID          int64  `json:"player_id"`
+	GameDate          string `json:"game_date"`
+	DidNotPlay        bool   `json:"did_not_play"`
+	Points            int    `json:"points"`
+	Rebounds          int    `json:"rebounds"`
+	Assists           int    `json:"assists"`
+	Steals            int    `json:"steals"`
+	Blocks            int    `json:"blocks"`
+	Turnovers         int    `json:"turnovers"`
+	MadeThreePointers int    `json:"made_three_pointers"`
+	MadeFreeThrows    int    `json:"made_free_throws"`
 }
 
 type playerStatsResponse struct {
@@ -89,8 +91,15 @@ func newUserResponse(user models.User) userResponse {
 }
 
 func newPlayerGameStatsResponse(stats *models.PlayerGameStats) playerGameStatsResponse {
+	gameDate := ""
+	if stats.Game != nil {
+		gameDate = stats.Game.GameDate.Format("2006-01-02")
+	}
+
 	return playerGameStatsResponse{
 		PlayerID:          stats.PlayerID,
+		GameDate:          gameDate,
+		DidNotPlay:        stats.DidNotPlay,
 		Points:            stats.Points,
 		Rebounds:          stats.Rebounds,
 		Assists:           stats.Assists,

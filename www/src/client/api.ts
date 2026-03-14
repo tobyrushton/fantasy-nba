@@ -47,6 +47,8 @@ export interface LeagueResponse {
 export interface PlayerGameStatsResponse {
     assists: number
     blocks: number
+    did_not_play: boolean
+    game_date: string
     made_free_throws: number
     made_three_pointers: number
     player_id: number

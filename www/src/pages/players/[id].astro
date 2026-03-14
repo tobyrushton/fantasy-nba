@@ -28,10 +28,6 @@ if (!Number.isInteger(playerId) || playerId <= 0) {
   }
 }
 
-function getGameLabel(index: number): string {
-  return `Game ${index + 1}`
-}
-
 function hasGames(games: PlayerGameStatsResponse[]): boolean {
   return games.length > 0
 }
@@ -44,6 +40,41 @@ function toAverage(games: PlayerGameStatsResponse[], selector: (game: PlayerGame
   const total = games.reduce((sum, game) => sum + selector(game), 0)
   return (total / games.length).toFixed(1)
 }
+
+function sortMostRecentFirst(games: PlayerGameStatsResponse[]): PlayerGameStatsResponse[] {
+  return [...games].sort((a, b) => {
+    const aTimestamp = Date.parse(a.game_date)
+    const bTimestamp = Date.parse(b.game_date)
+
+    if (Number.isNaN(aTimestamp) && Number.isNaN(bTimestamp)) {
+      return 0
+    }
+    if (Number.isNaN(aTimestamp)) {
+      return 1
+    }
+    if (Number.isNaN(bTimestamp)) {
+      return -1
+    }
+
+    return bTimestamp - aTimestamp
+  })
+}
+
+function formatGameDate(gameDate: string): string {
+  const parsed = new Date(gameDate)
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown date"
+  }
+
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+const sortedGames = playerStats ? sortMostRecentFirst(playerStats.games) : []
+const gamesForAverage = sortedGames.filter((game) => !game.did_not_play)
 ---
 
 <Layout>
@@ -80,7 +111,7 @@ function toAverage(games: PlayerGameStatsResponse[], selector: (game: PlayerGame
               <table class="min-w-full text-left text-sm">
                 <thead class="bg-slate-50 text-slate-600">
                   <tr>
-                    <th class="px-4 py-3 font-semibold">Game</th>
+                    <th class="px-4 py-3 font-semibold">Date</th>
                     <th class="px-4 py-3 font-semibold">PTS</th>
                     <th class="px-4 py-3 font-semibold">REB</th>
                     <th class="px-4 py-3 font-semibold">AST</th>
@@ -93,26 +124,26 @@ function toAverage(games: PlayerGameStatsResponse[], selector: (game: PlayerGame
                 </thead>
                 <tbody>
                   {
-                    hasGames(playerStats.games) ? (
+                    hasGames(sortedGames) ? (
                       <>
                         <tr class="border-t border-slate-200 bg-amber-50/60 text-slate-900">
-                          <td class="px-4 py-3 font-semibold">Average ({playerStats.games.length} games)</td>
-                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.points)}</td>
-                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.rebounds)}</td>
-                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.assists)}</td>
-                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.steals)}</td>
-                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.blocks)}</td>
-                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.turnovers)}</td>
+                          <td class="px-4 py-3 font-semibold">Average ({gamesForAverage.length} games)</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(gamesForAverage, (game) => game.points)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(gamesForAverage, (game) => game.rebounds)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(gamesForAverage, (game) => game.assists)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(gamesForAverage, (game) => game.steals)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(gamesForAverage, (game) => game.blocks)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(gamesForAverage, (game) => game.turnovers)}</td>
                           <td class="px-4 py-3 font-semibold">
-                            {toAverage(playerStats.games, (game) => game.made_three_pointers)}
+                            {toAverage(gamesForAverage, (game) => game.made_three_pointers)}
                           </td>
                           <td class="px-4 py-3 font-semibold">
-                            {toAverage(playerStats.games, (game) => game.made_free_throws)}
+                            {toAverage(gamesForAverage, (game) => game.made_free_throws)}
                           </td>
                         </tr>
-                        {playerStats.games.map((game, index) => (
+                        {sortedGames.map((game) => (
                           <tr class="border-t border-slate-200 text-slate-800">
-                            <td class="px-4 py-3 font-medium">{getGameLabel(index)}</td>
+                            <td class="px-4 py-3 font-medium">{formatGameDate(game.game_date)}</td>
                             <td class="px-4 py-3">{game.points}</td>
                             <td class="px-4 py-3">{game.rebounds}</td>
                             <td class="px-4 py-3">{game.assists}</td>

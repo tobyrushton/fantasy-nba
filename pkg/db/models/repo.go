@@ -244,7 +244,11 @@ func (r *PostgresRepo) GetPlayerByID(ctx context.Context, id int64) (*Player, er
 
 func (r *PostgresRepo) GetPlayerStatsByID(ctx context.Context, playerID int64) ([]*PlayerGameStats, error) {
 	var stats []*PlayerGameStats
-	err := r.db.NewSelect().Model(&stats).Where("player_id = ?", playerID).Scan(ctx)
+	err := r.db.NewSelect().
+		Model(&stats).
+		Where("player_id = ?", playerID).
+		Relation("Game").
+		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
