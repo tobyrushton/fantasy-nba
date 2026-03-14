@@ -56,6 +56,10 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
   const [players, setPlayers] = useState<PlayerResponse[]>([])
   const [playerSearch, setPlayerSearch] = useState("")
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<number[]>([])
+  const [removeSearch, setRemoveSearch] = useState("")
+  const [addSearch, setAddSearch] = useState("")
+  const [selectedRemovePlayerIds, setSelectedRemovePlayerIds] = useState<number[]>([])
+  const [selectedAddPlayerIds, setSelectedAddPlayerIds] = useState<number[]>([])
 
   function parseUserID(tokenValue: string): number | null {
     const parts = tokenValue.split(".")
@@ -171,6 +175,48 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
     })
   }, [playerSearch, players])
 
+  const currentUserRoster = useMemo(() => {
+    if (!userId) {
+      return undefined
+    }
+
+    return rosters.find((roster) => roster.user.id === userId)
+  }, [rosters, userId])
+  const isLeagueMember = Boolean(currentUserRoster)
+  const rosterPlayers = useMemo(() => currentUserRoster?.players ?? [], [currentUserRoster])
+  const hasTeam = rosterPlayers.length > 0
+
+  const filteredRosterPlayersForRemoval = useMemo(() => {
+    const query = normalizeForSearch(removeSearch)
+    if (query.length === 0) {
+      return rosterPlayers
+    }
+
+    return rosterPlayers.filter((player) => {
+      const fullName = normalizeForSearch(`${player.first_name} ${player.last_name}`)
+      const position = normalizeForSearch(player.position ?? "")
+      return fullName.includes(query) || position.includes(query)
+    })
+  }, [removeSearch, rosterPlayers])
+
+  const addablePlayers = useMemo(() => {
+    const rosterIDs = new Set(rosterPlayers.map((player) => player.id))
+    return players.filter((player) => !rosterIDs.has(player.id))
+  }, [players, rosterPlayers])
+
+  const filteredAddablePlayers = useMemo(() => {
+    const query = normalizeForSearch(addSearch)
+    if (query.length === 0) {
+      return addablePlayers
+    }
+
+    return addablePlayers.filter((player) => {
+      const fullName = normalizeForSearch(`${player.first_name} ${player.last_name}`)
+      const position = normalizeForSearch(player.position ?? "")
+      return fullName.includes(query) || position.includes(query)
+    })
+  }, [addSearch, addablePlayers])
+
   if (authState === "loading") {
     return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-600">Checking your session...</div>
   }
@@ -190,10 +236,6 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
   if (!league) {
     return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-600">League not found.</div>
   }
-
-  const currentUserRoster = userId ? rosters.find((roster) => roster.user.id === userId) : undefined
-  const isLeagueMember = Boolean(currentUserRoster)
-  const hasTeam = Boolean(currentUserRoster && (currentUserRoster.players?.length ?? 0) > 0)
 
   async function handleCreateTeam() {
     if (!token || !userId) {
@@ -230,6 +272,53 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
       }
 
       setError(getApiErrorMessage(createError))
+    } finally {
+      setIsSubmittingRoster(false)
+    }
+  }
+
+  async function handleUpdateTeam() {
+    if (!token || !userId) {
+      return
+    }
+
+    if (selectedRemovePlayerIds.length === 0) {
+      setError("Select at least one player to remove.")
+      return
+    }
+
+    if (selectedRemovePlayerIds.length !== selectedAddPlayerIds.length) {
+      setError("You must add the same number of players you remove.")
+      return
+    }
+
+    setIsSubmittingRoster(true)
+    setError(null)
+    setSuccess(null)
+    client.setToken(token)
+
+    try {
+      await client.updateRoster({
+        add_players: selectedAddPlayerIds,
+        league_id: leagueId,
+        remove_players: selectedRemovePlayerIds,
+        user_id: userId,
+      })
+
+      const refreshedRosters = await client.getLeagueRosters(leagueId)
+      setRosters(refreshedRosters)
+      setSelectedRemovePlayerIds([])
+      setSelectedAddPlayerIds([])
+      setSuccess("Team updated successfully.")
+    } catch (updateError) {
+      if (isUnauthorizedError(updateError)) {
+        clearStoredAuthToken()
+        setToken(null)
+        setAuthState("unauthenticated")
+        return
+      }
+
+      setError(getApiErrorMessage(updateError))
     } finally {
       setIsSubmittingRoster(false)
     }
@@ -356,6 +445,131 @@ export function LeagueDetail({ leagueId }: LeagueDetailProps) {
               </Button>
               <Button type="button" variant="outline" onClick={() => setSelectedPlayerIds([])} disabled={isSubmittingRoster || selectedPlayerIds.length === 0}>
                 Clear selection
+              </Button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {isLeagueMember && hasTeam ? (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <header className="border-b border-slate-200 px-5 py-4">
+            <h2 className="text-base font-semibold text-slate-900">Update Your Team</h2>
+            <p className="mt-1 text-sm text-slate-600">Remove and add the same number of players.</p>
+          </header>
+
+          <div className="grid gap-4 px-5 py-4 md:grid-cols-2">
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate-800">Remove from roster</p>
+              <Input
+                value={removeSearch}
+                onChange={(event) => setRemoveSearch(event.target.value)}
+                placeholder="Search your roster"
+                className="mb-2 h-10 border-slate-300 bg-white"
+              />
+              <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200 p-2">
+                <div className="space-y-2">
+                  {filteredRosterPlayersForRemoval.map((player) => {
+                    const isSelected = selectedRemovePlayerIds.includes(player.id)
+                    return (
+                      <button
+                        key={player.id}
+                        type="button"
+                        className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${
+                          isSelected
+                            ? "border-rose-300 bg-rose-50 text-rose-800"
+                            : "border-slate-200 bg-white text-slate-700"
+                        }`}
+                        onClick={() => {
+                          setSelectedRemovePlayerIds((current) => {
+                            if (current.includes(player.id)) {
+                              return current.filter((id) => id !== player.id)
+                            }
+                            return [...current, player.id]
+                          })
+                        }}
+                      >
+                        {player.first_name} {player.last_name}
+                        <span className="ml-2 text-xs text-slate-500">({player.position || "N/A"})</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate-800">Add to roster</p>
+              <Input
+                value={addSearch}
+                onChange={(event) => setAddSearch(event.target.value)}
+                placeholder="Search available players"
+                className="mb-2 h-10 border-slate-300 bg-white"
+              />
+              <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200 p-2">
+                <div className="space-y-2">
+                  {filteredAddablePlayers.map((player) => {
+                    const isSelected = selectedAddPlayerIds.includes(player.id)
+                    return (
+                      <div key={player.id} className={`rounded-lg border px-3 py-2 text-sm ${
+                        isSelected
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-slate-200 bg-white"
+                      }`}>
+                        <button
+                          type="button"
+                          className="w-full text-left text-slate-800"
+                          onClick={() => {
+                            setSelectedAddPlayerIds((current) => {
+                              if (current.includes(player.id)) {
+                                return current.filter((id) => id !== player.id)
+                              }
+                              return [...current, player.id]
+                            })
+                          }}
+                        >
+                          {player.first_name} {player.last_name}
+                          <span className="ml-2 text-xs text-slate-500">({player.position || "N/A"})</span>
+                        </button>
+                        <div className="mt-1 text-right">
+                          <a href={`/players/${player.id}`} className="text-xs font-medium text-slate-800 underline underline-offset-2">
+                            View full stats
+                          </a>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 px-5 py-4">
+            <p className="mb-3 text-sm text-slate-600">
+              Removing <span className="font-semibold text-slate-900">{selectedRemovePlayerIds.length}</span> and adding <span className="font-semibold text-slate-900">{selectedAddPlayerIds.length}</span>
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={handleUpdateTeam}
+                disabled={
+                  isSubmittingRoster ||
+                  selectedRemovePlayerIds.length === 0 ||
+                  selectedRemovePlayerIds.length !== selectedAddPlayerIds.length
+                }
+              >
+                {isSubmittingRoster ? "Updating team..." : "Update team"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSelectedRemovePlayerIds([])
+                  setSelectedAddPlayerIds([])
+                }}
+                disabled={isSubmittingRoster || (selectedRemovePlayerIds.length === 0 && selectedAddPlayerIds.length === 0)}
+              >
+                Clear changes
               </Button>
             </div>
           </div>
