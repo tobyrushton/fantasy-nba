@@ -124,9 +124,9 @@ func main() {
 		log.Fatalf("failed to scrape game stats: %v", err)
 	}
 
-	dbPlayerGameStats := make([]*models.PlayerGameStats, len(playerGameStats))
+	dbPlayerGameStats := make([]*models.PlayerGameStats, 0)
 
-	for i, stat := range playerGameStats {
+	for _, stat := range playerGameStats {
 		player := findPlayer(dbPlayers, strconv.Itoa(int(stat.PlayerID)))
 		if player == nil {
 			// This can happen for players who are inactive and don't appear in the stats page, so we log and skip them.
@@ -137,7 +137,7 @@ func main() {
 		if game == nil {
 			log.Fatalf("failed to find game for game stat with game NBAID %s", stat.GameID)
 		}
-		dbPlayerGameStats[i] = &models.PlayerGameStats{
+		dbPlayerGameStats = append(dbPlayerGameStats, &models.PlayerGameStats{
 			PlayerID:   player.ID,
 			GameID:     game.ID,
 			TeamID:     player.TeamID,
@@ -146,8 +146,13 @@ func main() {
 			Rebounds:   stat.Rebounds,
 			Assists:    stat.Assists,
 			Steals:     stat.Steals,
-		}
+		})
 	}
+
+	if _, err := db.NewInsert().Model(&dbPlayerGameStats).Returning("*").Exec(ctx); err != nil {
+		log.Fatalf("failed to insert player game stats: %v", err)
+	}
+
 	log.Println("Successfully seeded database")
 }
 
