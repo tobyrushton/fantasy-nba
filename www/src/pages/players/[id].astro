@@ -1,0 +1,143 @@
+---
+import { ApiError, Client, type PlayerGameStatsResponse, type PlayerStatsResponse } from "@/client/api"
+import Layout from "@/layouts/main.astro"
+
+export const prerender = false
+
+const idParam = Astro.params.id ?? ""
+const playerId = Number(idParam)
+
+let playerStats: PlayerStatsResponse | null = null
+let errorMessage: string | null = null
+
+if (!Number.isInteger(playerId) || playerId <= 0) {
+  Astro.response.status = 400
+  errorMessage = "Invalid player ID"
+} else {
+  try {
+    const client = new Client(import.meta.env.API_URL)
+    playerStats = await client.getPlayer(playerId)
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      Astro.response.status = 404
+      errorMessage = "Player not found"
+    } else {
+      Astro.response.status = 500
+      errorMessage = "Failed to load player stats"
+    }
+  }
+}
+
+function getGameLabel(index: number): string {
+  return `Game ${index + 1}`
+}
+
+function hasGames(games: PlayerGameStatsResponse[]): boolean {
+  return games.length > 0
+}
+
+function toAverage(games: PlayerGameStatsResponse[], selector: (game: PlayerGameStatsResponse) => number): string {
+  if (!hasGames(games)) {
+    return "0.0"
+  }
+
+  const total = games.reduce((sum, game) => sum + selector(game), 0)
+  return (total / games.length).toFixed(1)
+}
+---
+
+<Layout>
+  <main class="relative min-h-svh overflow-hidden p-4 md:p-10">
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(140deg,#f8fafc_0%,#eff6ff_48%,#fffbeb_100%)]" />
+
+    <section class="mx-auto w-full max-w-5xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl md:p-10">
+      <a
+        href="/"
+        class="inline-flex items-center text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+      >
+        ← Back to players
+      </a>
+
+      {
+        errorMessage ? (
+          <div class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-sm text-slate-700">
+            {errorMessage}
+          </div>
+        ) : playerStats ? (
+          <>
+            <header class="mt-6">
+              <p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Player Profile</p>
+              <h1 class="mt-2 text-3xl font-semibold text-slate-900 md:text-4xl">
+                {playerStats.player.first_name} {playerStats.player.last_name}
+              </h1>
+              <p class="mt-2 text-sm text-slate-600">
+                Position: {playerStats.player.position || "N/A"} • Team ID: {playerStats.player.team_id} • NBA ID:{" "}
+                {playerStats.player.nba_id}
+              </p>
+            </header>
+
+            <div class="mt-8 overflow-x-auto rounded-2xl border border-slate-200">
+              <table class="min-w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                  <tr>
+                    <th class="px-4 py-3 font-semibold">Game</th>
+                    <th class="px-4 py-3 font-semibold">PTS</th>
+                    <th class="px-4 py-3 font-semibold">REB</th>
+                    <th class="px-4 py-3 font-semibold">AST</th>
+                    <th class="px-4 py-3 font-semibold">STL</th>
+                    <th class="px-4 py-3 font-semibold">BLK</th>
+                    <th class="px-4 py-3 font-semibold">TOV</th>
+                    <th class="px-4 py-3 font-semibold">3PM</th>
+                    <th class="px-4 py-3 font-semibold">FTM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {
+                    hasGames(playerStats.games) ? (
+                      <>
+                        <tr class="border-t border-slate-200 bg-amber-50/60 text-slate-900">
+                          <td class="px-4 py-3 font-semibold">Average ({playerStats.games.length} games)</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.points)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.rebounds)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.assists)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.steals)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.blocks)}</td>
+                          <td class="px-4 py-3 font-semibold">{toAverage(playerStats.games, (game) => game.turnovers)}</td>
+                          <td class="px-4 py-3 font-semibold">
+                            {toAverage(playerStats.games, (game) => game.made_three_pointers)}
+                          </td>
+                          <td class="px-4 py-3 font-semibold">
+                            {toAverage(playerStats.games, (game) => game.made_free_throws)}
+                          </td>
+                        </tr>
+                        {playerStats.games.map((game, index) => (
+                          <tr class="border-t border-slate-200 text-slate-800">
+                            <td class="px-4 py-3 font-medium">{getGameLabel(index)}</td>
+                            <td class="px-4 py-3">{game.points}</td>
+                            <td class="px-4 py-3">{game.rebounds}</td>
+                            <td class="px-4 py-3">{game.assists}</td>
+                            <td class="px-4 py-3">{game.steals}</td>
+                            <td class="px-4 py-3">{game.blocks}</td>
+                            <td class="px-4 py-3">{game.turnovers}</td>
+                            <td class="px-4 py-3">{game.made_three_pointers}</td>
+                            <td class="px-4 py-3">{game.made_free_throws}</td>
+                          </tr>
+                        ))}
+                      </>
+                    ) : (
+                      <tr>
+                        <td class="px-4 py-8 text-center text-slate-600" colspan="9">
+                          No recorded games for this player yet.
+                        </td>
+                      </tr>
+                    )
+                  }
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : null
+      }
+    </section>
+  </main>
+</Layout>

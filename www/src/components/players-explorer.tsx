@@ -90,11 +90,11 @@ export function PlayersExplorer({ players }: PlayersExplorerProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All positions</SelectItem>
-            {positionOptions.map((position) => (
-              <SelectItem key={position} value={position.toLowerCase()}>
-                {position}
-              </SelectItem>
-            ))}
+              {positionOptions.map((position) => (
+                <SelectItem key={position} value={position.toLowerCase()}>
+                  {position}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button
@@ -134,6 +134,9 @@ export function PlayersExplorer({ players }: PlayersExplorerProps) {
                   Team: {player.team_id}
                 </span>
               </div>
+              <Button asChild size="sm" className="mt-4 w-full">
+                <a href={`/players/${player.id}`}>View stats</a>
+              </Button>
             </article>
           ))}
         </div>
