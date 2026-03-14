@@ -35,16 +35,23 @@ func (s *LeagueControllerSuite) TestCreateLeagueReturns201AndLeague() {
 
 	s.Equal(fiber.StatusCreated, res.StatusCode)
 	s.Equal(1, repo.CreateLeagueCallCount())
+	s.Equal(1, repo.JoinLeagueCallCount())
 
 	_, gotName, gotUserID := repo.CreateLeagueArgsForCall(0)
 	s.Equal("Champions", gotName)
 	s.Equal(int64(42), gotUserID)
+
+	_, gotJoinedLeagueID, gotJoinedUserID := repo.JoinLeagueArgsForCall(0)
+	s.Equal(7, gotJoinedLeagueID)
+	s.Equal(int64(42), gotJoinedUserID)
 
 	var resp leagueResponse
 	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
 	s.Equal(int64(7), resp.ID)
 	s.Equal("Champions", resp.Name)
 	s.Equal(int64(42), resp.CreatorID)
+	s.Equal("Unknown", resp.CreatorUsername)
+	s.Equal(1, resp.MemberCount)
 	s.NoError(res.Body.Close())
 }
 
@@ -66,7 +73,22 @@ func (s *LeagueControllerSuite) TestCreateLeagueReturns500WhenRepoFails() {
 
 	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
 	s.Equal(1, repo.CreateLeagueCallCount())
+	s.Equal(0, repo.JoinLeagueCallCount())
 	s.Equal(map[string]string{"error": "failed to create league"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestCreateLeagueReturns500WhenAutoJoinFails() {
+	league := &models.League{ID: 7, Name: "Champions", CreatorID: 42}
+	repo := &fakes.FakeRepo{}
+	repo.CreateLeagueReturns(league, nil)
+	repo.JoinLeagueReturns(errors.New("db down"))
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/leagues", `{"name":"Champions","user_id":42}`)
+
+	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.CreateLeagueCallCount())
+	s.Equal(1, repo.JoinLeagueCallCount())
+	s.Equal(map[string]string{"error": "failed to join league"}, s.decodeErrorResponse(res))
 }
 
 func (s *LeagueControllerSuite) TestGetLeaguesReturnsLeagueList() {
@@ -87,9 +109,14 @@ func (s *LeagueControllerSuite) TestGetLeaguesReturnsLeagueList() {
 	s.Equal(int64(1), resp[0].ID)
 	s.Equal("Champions", resp[0].Name)
 	s.Equal(int64(42), resp[0].CreatorID)
+	s.Equal("Unknown", resp[0].CreatorUsername)
+	s.Equal(1, resp[0].MemberCount)
 	s.Equal(int64(2), resp[1].ID)
 	s.Equal("Dynasty", resp[1].Name)
 	s.Equal(int64(84), resp[1].CreatorID)
+	s.Equal("Unknown", resp[1].CreatorUsername)
+	s.Equal(1, resp[1].MemberCount)
+	s.Equal(2, repo.GetUsersInLeagueCallCount())
 	s.NoError(res.Body.Close())
 }
 
@@ -156,6 +183,9 @@ func (s *LeagueControllerSuite) TestGetLeagueByIDReturnsLeague() {
 	s.Equal(int64(7), resp.ID)
 	s.Equal("Champions", resp.Name)
 	s.Equal(int64(42), resp.CreatorID)
+	s.Equal("Unknown", resp.CreatorUsername)
+	s.Equal(1, resp.MemberCount)
+	s.Equal(1, repo.GetUsersInLeagueCallCount())
 	s.NoError(res.Body.Close())
 }
 
@@ -279,12 +309,14 @@ func (s *LeagueControllerSuite) TestCreateRosterReturns400WhenPlayerIDsAreDuplic
 
 func (s *LeagueControllerSuite) TestCreateRosterReturns500WhenRepoFails() {
 	repo := &fakes.FakeRepo{}
+	repo.GetUsersInLeagueReturns([]*models.User{{ID: 42, Username: "toby"}}, nil)
 	repo.CreateRosterReturns(errors.New("db down"))
 	playerIDs := []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", `{"league_id":7,"user_id":42,"player_ids":[1,2,3,4,5,6,7,8,9,10]}`)
 
 	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.GetUsersInLeagueCallCount())
 	s.Equal(1, repo.CreateRosterCallCount())
 
 	_, gotLeagueID, gotUserID, gotPlayerIDs := repo.CreateRosterArgsForCall(0)
@@ -296,12 +328,14 @@ func (s *LeagueControllerSuite) TestCreateRosterReturns500WhenRepoFails() {
 
 func (s *LeagueControllerSuite) TestCreateRosterReturnsSuccessMessage() {
 	repo := &fakes.FakeRepo{}
+	repo.GetUsersInLeagueReturns([]*models.User{{ID: 42, Username: "toby"}}, nil)
 	repo.CreateRosterReturns(nil)
 	playerIDs := []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", `{"league_id":7,"user_id":42,"player_ids":[1,2,3,4,5,6,7,8,9,10]}`)
 
 	s.Equal(fiber.StatusOK, res.StatusCode)
+	s.Equal(1, repo.GetUsersInLeagueCallCount())
 	s.Equal(1, repo.CreateRosterCallCount())
 
 	_, gotLeagueID, gotUserID, gotPlayerIDs := repo.CreateRosterArgsForCall(0)
@@ -313,6 +347,30 @@ func (s *LeagueControllerSuite) TestCreateRosterReturnsSuccessMessage() {
 	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
 	s.Equal("roster created successfully", resp["message"])
 	s.NoError(res.Body.Close())
+}
+
+func (s *LeagueControllerSuite) TestCreateRosterReturns403WhenUserIsNotLeagueMember() {
+	repo := &fakes.FakeRepo{}
+	repo.GetUsersInLeagueReturns([]*models.User{{ID: 99, Username: "other-user"}}, nil)
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", `{"league_id":7,"user_id":42,"player_ids":[1,2,3,4,5,6,7,8,9,10]}`)
+
+	s.Equal(fiber.StatusForbidden, res.StatusCode)
+	s.Equal(1, repo.GetUsersInLeagueCallCount())
+	s.Equal(0, repo.CreateRosterCallCount())
+	s.Equal(map[string]string{"error": "user is not a member of this league"}, s.decodeErrorResponse(res))
+}
+
+func (s *LeagueControllerSuite) TestCreateRosterReturns500WhenMemberLookupFails() {
+	repo := &fakes.FakeRepo{}
+	repo.GetUsersInLeagueReturns(nil, errors.New("db down"))
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodPost, "/rosters", `{"league_id":7,"user_id":42,"player_ids":[1,2,3,4,5,6,7,8,9,10]}`)
+
+	s.Equal(fiber.StatusInternalServerError, res.StatusCode)
+	s.Equal(1, repo.GetUsersInLeagueCallCount())
+	s.Equal(0, repo.CreateRosterCallCount())
+	s.Equal(map[string]string{"error": "failed to get users in league"}, s.decodeErrorResponse(res))
 }
 
 func (s *LeagueControllerSuite) TestGetRostersByLeagueIDReturns400WhenIDIsInvalid() {
@@ -376,6 +434,30 @@ func (s *LeagueControllerSuite) TestGetRostersByLeagueIDReturnsPlayersGroupedByU
 	s.Equal("alex", resp[1].User.Username)
 	s.Len(resp[1].Players, 1)
 	s.Equal("Nikola", resp[1].Players[0].FirstName)
+	s.NoError(res.Body.Close())
+}
+
+func (s *LeagueControllerSuite) TestGetRostersByLeagueIDIncludesMembersWithoutRoster() {
+	repo := &fakes.FakeRepo{}
+	repo.GetRostersByLeagueIDReturns([]*models.TeamRoster{
+		{UserID: 42, Player: &models.Player{ID: 1, FirstName: "Stephen", LastName: "Curry"}},
+	}, nil)
+	repo.GetUsersInLeagueReturns([]*models.User{
+		{ID: 42, Username: "toby"},
+		{ID: 84, Username: "alex"},
+	}, nil)
+
+	res := s.performJSONRequest(s.newApp(repo), http.MethodGet, "/leagues/7/rosters", "")
+
+	s.Equal(fiber.StatusOK, res.StatusCode)
+
+	var resp []rosterResponse
+	s.Require().NoError(json.NewDecoder(res.Body).Decode(&resp))
+	s.Len(resp, 2)
+	s.Equal(int64(42), resp[0].User.ID)
+	s.Len(resp[0].Players, 1)
+	s.Equal(int64(84), resp[1].User.ID)
+	s.Len(resp[1].Players, 0)
 	s.NoError(res.Body.Close())
 }
 

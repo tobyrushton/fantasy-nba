@@ -26,6 +26,7 @@ func (s *Scraper) GetSchedule(teams []ScrapedTeam, season int) ([]ScrapedGame, e
 	parseErrors := make([]string, 0)
 
 	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
 
 	// scrape home schedule for each team in parallel, then combine results.
 	for _, team := range teams {
@@ -35,10 +36,14 @@ func (s *Scraper) GetSchedule(teams []ScrapedTeam, season int) ([]ScrapedGame, e
 
 			homeGames, err := s.scrapeHomeGames(team.NBAID, season)
 			if err != nil {
+				mu.Lock()
 				parseErrors = append(parseErrors, fmt.Sprintf("team %s: %v", team.Name, err))
+				mu.Unlock()
 				return
 			}
+			mu.Lock()
 			games = append(games, homeGames...)
+			mu.Unlock()
 		}(team)
 	}
 

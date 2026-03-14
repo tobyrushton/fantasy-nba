@@ -3,9 +3,11 @@ package controllers
 import "github.com/tobyrushton/fantasy-nba/pkg/db/models"
 
 type leagueResponse struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	CreatorID int64  `json:"creator_id"`
+	ID              int64  `json:"id"`
+	Name            string `json:"name"`
+	CreatorID       int64  `json:"creator_id"`
+	CreatorUsername string `json:"creator_username"`
+	MemberCount     int    `json:"member_count"`
 }
 
 type playerResponse struct {
@@ -14,6 +16,7 @@ type playerResponse struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Position  string `json:"position"`
+	TeamName  string `json:"team_name"`
 	TeamID    int64  `json:"team_id"`
 }
 
@@ -28,15 +31,17 @@ type userResponse struct {
 }
 
 type playerGameStatsResponse struct {
-	PlayerID          int64 `json:"player_id"`
-	Points            int   `json:"points"`
-	Rebounds          int   `json:"rebounds"`
-	Assists           int   `json:"assists"`
-	Steals            int   `json:"steals"`
-	Blocks            int   `json:"blocks"`
-	Turnovers         int   `json:"turnovers"`
-	MadeThreePointers int   `json:"made_three_pointers"`
-	MadeFreeThrows    int   `json:"made_free_throws"`
+	PlayerID          int64  `json:"player_id"`
+	GameDate          string `json:"game_date"`
+	DidNotPlay        bool   `json:"did_not_play"`
+	Points            int    `json:"points"`
+	Rebounds          int    `json:"rebounds"`
+	Assists           int    `json:"assists"`
+	Steals            int    `json:"steals"`
+	Blocks            int    `json:"blocks"`
+	Turnovers         int    `json:"turnovers"`
+	MadeThreePointers int    `json:"made_three_pointers"`
+	MadeFreeThrows    int    `json:"made_free_throws"`
 }
 
 type playerStatsResponse struct {
@@ -44,32 +49,31 @@ type playerStatsResponse struct {
 	Games  []playerGameStatsResponse `json:"games"`
 }
 
-func newLeagueResponse(league *models.League) leagueResponse {
+func newLeagueResponse(league *models.League, creatorUsername string, memberCount int) leagueResponse {
 	return leagueResponse{
-		ID:        league.ID,
-		Name:      league.Name,
-		CreatorID: league.CreatorID,
+		ID:              league.ID,
+		Name:            league.Name,
+		CreatorID:       league.CreatorID,
+		CreatorUsername: creatorUsername,
+		MemberCount:     memberCount,
 	}
 }
 
 func newPlayerResponse(player models.Player) playerResponse {
+	teamName := ""
+	if player.Team != nil {
+		teamName = player.Team.Name
+	}
+
 	return playerResponse{
 		ID:        player.ID,
 		NBAID:     player.NBAID,
 		FirstName: player.FirstName,
 		LastName:  player.LastName,
 		Position:  player.Position,
+		TeamName:  teamName,
 		TeamID:    player.TeamID,
 	}
-}
-
-func newLeagueResponses(leagues []*models.League) []leagueResponse {
-	resp := make([]leagueResponse, 0, len(leagues))
-	for _, league := range leagues {
-		resp = append(resp, newLeagueResponse(league))
-	}
-
-	return resp
 }
 
 func newPlayerResponses(players []models.Player) []playerResponse {
@@ -89,8 +93,15 @@ func newUserResponse(user models.User) userResponse {
 }
 
 func newPlayerGameStatsResponse(stats *models.PlayerGameStats) playerGameStatsResponse {
+	gameDate := ""
+	if stats.Game != nil {
+		gameDate = stats.Game.GameDate.Format("2006-01-02")
+	}
+
 	return playerGameStatsResponse{
 		PlayerID:          stats.PlayerID,
+		GameDate:          gameDate,
+		DidNotPlay:        stats.DidNotPlay,
 		Points:            stats.Points,
 		Rebounds:          stats.Rebounds,
 		Assists:           stats.Assists,

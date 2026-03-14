@@ -1,0 +1,28 @@
+---
+import { LeagueDetail } from "@/components/league-detail"
+import Layout from "@/layouts/main.astro"
+
+export const prerender = false
+
+const idParam = Astro.params.id ?? ""
+const leagueId = Number(idParam)
+const isValidLeagueId = Number.isInteger(leagueId) && leagueId > 0
+---
+
+<Layout>
+  <main class="relative min-h-svh overflow-hidden p-4 md:p-10">
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(140deg,#f8fafc_0%,#eff6ff_48%,#fffbeb_100%)]" />
+
+    <section class="mx-auto w-full max-w-5xl rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl md:p-8">
+      {
+        !isValidLeagueId ? (
+          <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-sm text-slate-700">
+            Invalid league ID.
+          </div>
+        ) : (
+          <LeagueDetail client:load leagueId={leagueId} />
+        )
+      }
+    </section>
+  </main>
+</Layout>

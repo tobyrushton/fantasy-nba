@@ -75,7 +75,7 @@ func (r *PostgresRepo) CreateLeague(ctx context.Context, name string, creatorID 
 
 func (r *PostgresRepo) GetLeagues(ctx context.Context) ([]*League, error) {
 	var leagues []*League
-	err := r.db.NewSelect().Model(&leagues).Scan(ctx)
+	err := r.db.NewSelect().Model(&leagues).Relation("Creator").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (r *PostgresRepo) GetLeagues(ctx context.Context) ([]*League, error) {
 
 func (r *PostgresRepo) GetLeagueByID(ctx context.Context, id int) (*League, error) {
 	league := &League{ID: int64(id)}
-	err := r.db.NewSelect().Model(league).Where("id = ?", id).Scan(ctx)
+	err := r.db.NewSelect().Model(league).Where("l.id = ?", id).Relation("Creator").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (r *PostgresRepo) UpdateRoster(ctx context.Context, leagueID, userID int64,
 
 func (r *PostgresRepo) GetPlayers(ctx context.Context, search, position string) ([]Player, error) {
 	var players []Player
-	query := r.db.NewSelect().Model(&players)
+	query := r.db.NewSelect().Model(&players).Relation("Team")
 
 	if search != "" {
 		query = query.Where("name ILIKE ?", "%"+search+"%")
@@ -244,7 +244,11 @@ func (r *PostgresRepo) GetPlayerByID(ctx context.Context, id int64) (*Player, er
 
 func (r *PostgresRepo) GetPlayerStatsByID(ctx context.Context, playerID int64) ([]*PlayerGameStats, error) {
 	var stats []*PlayerGameStats
-	err := r.db.NewSelect().Model(&stats).Where("player_id = ?", playerID).Scan(ctx)
+	err := r.db.NewSelect().
+		Model(&stats).
+		Where("player_id = ?", playerID).
+		Relation("Game").
+		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
