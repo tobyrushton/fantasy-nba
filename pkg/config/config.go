@@ -6,8 +6,8 @@ import (
 )
 
 type Config struct {
-	DB_PASSWORD string `envconfig:"DB_PASSWORD"`
-	JWT_SECRET  string `envconfig:"JWT_SECRET"`
+	DB_URL     string `envconfig:"DB_URL"`
+	JWT_SECRET string `envconfig:"JWT_SECRET"`
 }
 
 func loadConfig() (*Config, error) {

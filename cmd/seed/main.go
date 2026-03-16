@@ -19,7 +19,7 @@ import (
 func main() {
 	cfg := config.MustLoadConfig()
 
-	db, err := db.NewDb(fmt.Sprintf("postgres://admin:%s@localhost:5432/postgres?sslmode=disable", cfg.DB_PASSWORD))
+	db, err := db.NewDb(cfg.DB_URL)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
@@ -157,9 +157,22 @@ func main() {
 
 	log.Printf("found %d player game stats", len(dbPlayerGameStats))
 
-	if _, err := db.NewInsert().Model(&dbPlayerGameStats).Returning("*").Exec(ctx); err != nil {
-		log.Fatalf("failed to insert player game stats: %v", err)
+	// split into batches of 100 to avoid hitting the parameter limit of postgres
+	batchSize := 100
+	for i := 0; i < len(dbPlayerGameStats); i += batchSize {
+		end := i + batchSize
+		if end > len(dbPlayerGameStats) {
+			end = len(dbPlayerGameStats)
+		}
+		batch := dbPlayerGameStats[i:end]
+		if _, err := db.NewInsert().Model(&batch).Returning("*").Exec(ctx); err != nil {
+			log.Fatalf("failed to insert player game stats: %v", err)
+		}
 	}
+
+	// if _, err := db.NewInsert().Model(&dbPlayerGameStats).Returning("*").Exec(ctx); err != nil {
+	// 	log.Fatalf("failed to insert player game stats: %v", err)
+	// }
 
 	log.Println("Successfully seeded database")
 }

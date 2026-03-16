@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	swagger "github.com/gofiber/contrib/v3/swaggerui"
@@ -24,7 +23,7 @@ import (
 func main() {
 	cfg := config.MustLoadConfig()
 
-	db, err := db.NewDb(fmt.Sprintf("postgres://admin:%s@localhost:5432/postgres?sslmode=disable", cfg.DB_PASSWORD))
+	db, err := db.NewDb(cfg.DB_URL)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

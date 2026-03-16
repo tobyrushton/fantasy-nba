@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/tobyrushton/fantasy-nba/pkg/config"
@@ -13,7 +12,7 @@ import (
 func main() {
 	cfg := config.MustLoadConfig()
 
-	db, err := db.NewDb(fmt.Sprintf("postgres://admin:%s@localhost:5432/postgres?sslmode=disable", cfg.DB_PASSWORD))
+	db, err := db.NewDb(cfg.DB_URL)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
